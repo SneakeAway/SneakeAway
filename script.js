@@ -1153,7 +1153,7 @@ function openWishlistSelector(id, e) {
                 </div>
 
                 <button id="confirm-wishlist-btn" onclick="confirmWishlistAdd(${jsId(p.id)})" 
-                        style="width:100%; padding:14px; background:#E63946; color:white; border:none; border-radius:10px; font-weight:700; font-size:1rem; cursor:pointer; opacity:0.5;" disabled>
+                        style="width:100%; padding:14px; background:#C9A84C; color:#111; border:none; border-radius:10px; font-weight:700; font-size:1rem; cursor:pointer; opacity:0.5;" disabled>
                     ${dict.add_to_wishlist}
                 </button>
             </div>
@@ -1181,8 +1181,8 @@ function selectWishColor(btn, color) {
         b.style.borderColor = 'var(--border)';
         b.style.background = 'var(--bg)';
     });
-    btn.style.borderColor = '#E63946';
-    btn.style.background = 'rgba(230, 57, 70, 0.15)';
+    btn.style.borderColor = '#C9A84C';
+    btn.style.background = 'rgba(201, 168, 76, 0.18)';
     selectedWishColor = color;
     const modal = document.getElementById('wishlist-selector-modal');
     const img = modal && modal.querySelector('img');
@@ -1198,8 +1198,8 @@ function selectWishSize(btn, size) {
         b.style.borderColor = 'var(--border)';
         b.style.background = 'var(--bg)';
     });
-    btn.style.borderColor = '#E63946';
-    btn.style.background = 'rgba(230, 57, 70, 0.15)';
+    btn.style.borderColor = '#C9A84C';
+    btn.style.background = 'rgba(201, 168, 76, 0.18)';
     selectedWishSize = size;
     checkWishlistReady();
 }
