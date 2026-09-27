@@ -1,0 +1,89 @@
+{
+  "updated": "2026-09-22",
+  "note": "Indicative transit bands when the shop did not give days. Exact time and price are in the shop.",
+  "zones": {
+    "eu": {
+      "daysMin": 2,
+      "daysMax": 6,
+      "cc": [
+        "AT",
+        "BE",
+        "BG",
+        "HR",
+        "CY",
+        "CZ",
+        "DK",
+        "EE",
+        "FI",
+        "FR",
+        "DE",
+        "GR",
+        "HU",
+        "IE",
+        "IT",
+        "LV",
+        "LT",
+        "LU",
+        "MT",
+        "NL",
+        "PL",
+        "PT",
+        "RO",
+        "SK",
+        "SI",
+        "ES",
+        "SE"
+      ]
+    },
+    "uk": {
+      "daysMin": 2,
+      "daysMax": 5,
+      "cc": [
+        "GB",
+        "UK"
+      ]
+    },
+    "us": {
+      "daysMin": 5,
+      "daysMax": 12,
+      "cc": [
+        "US"
+      ]
+    },
+    "asia": {
+      "daysMin": 6,
+      "daysMax": 14,
+      "cc": [
+        "CN",
+        "JP",
+        "KR",
+        "SG",
+        "HK",
+        "TW",
+        "MY",
+        "TH",
+        "VN",
+        "ID",
+        "IN",
+        "PH"
+      ]
+    },
+    "mena": {
+      "daysMin": 5,
+      "daysMax": 12,
+      "cc": [
+        "AE",
+        "SA",
+        "IL",
+        "TR",
+        "EG",
+        "QA"
+      ]
+    },
+    "other": {
+      "daysMin": 7,
+      "daysMax": 21,
+      "cc": []
+    }
+  }
+}

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sneake® Away</title>
+    <meta name="robots" content="index,follow">
+    <link rel="icon" href="favicon.png?v=307" type="image/png">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png?v=2926">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css?v=307">
+</head>
+<body class="light product-body">
+    <div class="util-bar" id="util-bar">
+        <div class="util-bar-left">
+        <button type="button" class="select-ui dest-chip" id="dest-chip" onclick="openDestPanel()" aria-label="Destination"><i class="fas fa-globe dest-globe" aria-hidden="true"></i> Worldwide *</button>
+        <button type="button" class="select-ui dest-chip" id="size-chip" aria-label="Size">EU —</button>
+        <button type="button" class="select-ui guide-chip" id="guide-chip" onclick="openSiteGuide()" aria-label="Guide">Guide</button>
+        </div>
+        <div class="util-bar-right" id="header-tools-extra">
+            <select class="select-ui" id="lang-select" onchange="updateUI()">
+                <option value="en" selected>EN</option>
+                <option value="bg">BG</option>
+                <option value="fr">FR</option>
+                <option value="de">DE</option>
+                <option value="es">ES</option>
+                <option value="it">IT</option>
+            </select>
+            <select class="select-ui" id="curr-select" onchange="updateUI()">
+                <option value="EUR">EUR €</option>
+                <option value="GBP">GBP £</option>
+                <option value="USD">USD $</option>
+                <option value="CHF">CHF</option>
+            </select>
+            <span id="fx-tip" class="fx-tip" title="Indicative ECB rate"></span>
+            <button class="select-ui" id="theme-toggle" aria-label="Theme"><i class="fas fa-adjust"></i></button>
+        </div>
+    </div>
+    <header>
+        <a href="index.html" class="nav-back-mini" aria-label="Catalog">←</a>
+        <nav class="nav-cats" id="main-nav">
+            <a href="index.html" class="nav-link t-key" data-key="cat_men">Men</a>
+            <a href="index.html" class="nav-link t-key" data-key="cat_women">Women</a>
+            <a href="index.html" class="nav-link t-key" data-key="cat_kids">Kids</a>
+        </nav>
+        <a href="index.html" class="logo">
+            <img src="header-light.png" alt="Sneake® Away" class="logo-img">
+        </a>
+        <div class="header-tools">
+            <div class="header-search">
+                <i class="fas fa-search" aria-hidden="true"></i>
+                <input type="text" id="header-search-input" placeholder="Search sneakers..." autocomplete="off" aria-label="Search">
+            </div>
+            <button type="button" class="heart-btn" onclick="showWishlistPage()" aria-label="Wishlist"><i class="fa-regular fa-heart"></i></button>
+            <button type="button" class="icon-btn" onclick="openAccountSheet()" aria-label="Sign in"><i class="fa-regular fa-user"></i></button>
+        </div>
+    </header>
+    <div class="pdp-search">
+        <i class="fas fa-search" aria-hidden="true"></i>
+        <input type="text" id="pdp-search-input" placeholder="Search sneakers..." autocomplete="off" aria-label="Search">
+    </div>
+    <main id="product-page" class="product-page"></main>
+    <div id="size-guide-modal" class="size-guide-modal" hidden role="dialog" aria-labelledby="size-guide-title" onclick="if(event.target===this)closeSizeGuide()">
+        <div class="size-guide-panel">
+            <div class="size-guide-head">
+                <h2 id="size-guide-title" class="t-key" data-key="size_guide">Size chart</h2>
+                <button type="button" class="size-guide-close" onclick="closeSizeGuide()" aria-label="Close">&times;</button>
+            </div>
+            <p class="size-guide-note t-key" data-key="size_guide_note">Adult sneakers, approximate conversion. The shop listing is the source of truth.</p>
+            <div class="size-guide-scroll">
+                <table class="size-guide-table" id="size-guide-table"></table>
+            </div>
+        </div>
+    </div>
+    <script src="script.js?v=307"></script>
+    <script src="sa-live.js?v=325aj"></script>
+</body>
+</html>

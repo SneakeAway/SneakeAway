@@ -1,0 +1,16 @@
+{
+  "updated": "2026-09-22",
+  "note": "Indicative footwear MFN-style rates. Not a customs declaration.",
+  "category": "footwear",
+  "defaultThird": 16.9,
+  "byDest": {
+    "US": 12.5,
+    "GB": 16.9,
+    "UK": 16.9,
+    "CH": 6.5,
+    "NO": 10.7,
+    "CA": 18,
+    "AU": 5,
+    "JP": 8
+  }
+}

@@ -1,0 +1,199 @@
+{
+  "updated": "2026-09-22",
+  "note": "Public shop delivery pages. Missing destination = info in the shop, do not invent a rate.",
+  "shops": {
+    "Sizeer": {
+      "origin": "LT",
+      "note": "sizeer.lt ships Lithuania only. Other countries need the local Sizeer shop.",
+      "ddp": [
+        "LT",
+        "PL",
+        "DE",
+        "CZ",
+        "SK",
+        "RO",
+        "BG"
+      ],
+      "domains": {
+        "LT": {
+          "host": "sizeer.lt",
+          "ships": [
+            "LT"
+          ],
+          "rate": 0,
+          "freeOver": 50,
+          "daysMin": 2,
+          "daysMax": 6
+        },
+        "PL": {
+          "host": "sklep.sizeer.com",
+          "ships": [
+            "PL"
+          ],
+          "rate": 2.3,
+          "freeOver": 82,
+          "daysMin": 3,
+          "daysMax": 7
+        },
+        "DE": {
+          "host": "sizeer.de",
+          "ships": [
+            "DE"
+          ],
+          "rate": null,
+          "freeOver": null,
+          "daysMin": 3,
+          "daysMax": 8
+        },
+        "CZ": {
+          "host": "sizeer.cz",
+          "ships": [
+            "CZ"
+          ],
+          "rate": null,
+          "freeOver": null,
+          "daysMin": 3,
+          "daysMax": 8
+        },
+        "SK": {
+          "host": "sizeer.sk",
+          "ships": [
+            "SK"
+          ],
+          "rate": null,
+          "freeOver": null,
+          "daysMin": 3,
+          "daysMax": 8
+        },
+        "RO": {
+          "host": "sizeer.ro",
+          "ships": [
+            "RO"
+          ],
+          "rate": null,
+          "freeOver": null,
+          "daysMin": 4,
+          "daysMax": 8
+        },
+        "BG": {
+          "host": "sizeer.bg",
+          "ships": [
+            "BG"
+          ],
+          "rate": 4.6,
+          "freeOver": 61.36,
+          "daysMin": 3,
+          "daysMax": 7
+        }
+      },
+      "defaultShips": [
+        "LT"
+      ]
+    },
+    "Oxygen": {
+      "origin": "GB",
+      "note": "UK free over \u00a3150. International calculated at checkout. Duties paid by customer.",
+      "ddp": [
+        "GB",
+        "UK"
+      ],
+      "domains": {
+        "GB": {
+          "host": "www.oxygenclothing.co.uk",
+          "ships": [
+            "GB",
+            "UK"
+          ],
+          "rate": 0,
+          "freeOver": 150,
+          "daysMin": 1,
+          "daysMax": 5
+        }
+      },
+      "defaultShips": [
+        "GB",
+        "UK"
+      ]
+    },
+    "Queens": {
+      "origin": "FR",
+      "note": "iQueens.fr. FR DPD 7.49 / point 3.99, free over 200 EUR. Other countries: info in the shop. Nike/Jordan not outside EU (except CH, UK).",
+      "ddp": [
+        "FR",
+        "BE",
+        "DE",
+        "ES",
+        "IT",
+        "NL",
+        "AT",
+        "PT",
+        "IE",
+        "LU"
+      ],
+      "domains": {
+        "FR": {
+          "host": "www.iqueens.fr",
+          "ships": [
+            "FR",
+            "BE",
+            "DE",
+            "ES",
+            "IT",
+            "NL",
+            "AT",
+            "PT",
+            "IE",
+            "LU",
+            "PL",
+            "CZ",
+            "SK",
+            "RO",
+            "BG",
+            "LT",
+            "LV",
+            "EE",
+            "HU",
+            "HR",
+            "SI",
+            "SE",
+            "DK",
+            "FI",
+            "GR"
+          ],
+          "rate": 3.99,
+          "rateAppliesTo": [
+            "FR"
+          ],
+          "freeOver": 200,
+          "daysMin": 2,
+          "daysMax": 6
+        }
+      },
+      "defaultShips": [
+        "FR"
+      ]
+    },
+    "Footshop": {
+      "origin": "CZ",
+      "ddp": [
+        "CZ",
+        "SK",
+        "HU",
+        "PL",
+        "DE",
+        "AT",
+        "RO"
+      ],
+      "domains": {
+        "CZ": {
+          "host": "footshop.cz",
+          "ships": [
+            "CZ"
+          ],
+          "daysMin": 2,
+          "daysMax": 6
+        }
+      }
+    }
+  }
+}

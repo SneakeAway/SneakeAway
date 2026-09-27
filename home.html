@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="impact-site-verification" content="ee3109d3-d048-4055-903f-fd3e6274b056" value="ee3109d3-d048-4055-903f-fd3e6274b056">
+    <title>Sneake® Away — compare sneaker prices</title>
+    <meta name="description" content="Compare sneaker offers across shops. Find a pair, pick size and destination, buy in the shop. We do not sell stock.">
+    <meta name="robots" content="index,follow">
+    <meta name="theme-color" content="#f5f5f7">
+    <link rel="canonical" href="https://sneakeaway.com/">
+    <link rel="icon" href="favicon.png?v=325e" type="image/png">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png?v=2926">
+    <meta property="og:site_name" content="Sneake® Away">
+    <meta property="og:title" content="Sneake® Away — compare sneaker prices">
+    <meta property="og:description" content="Find. Compare. Buy in shop. Ranked retailer offers for the same pair.">
+    <meta property="og:image" content="https://sneakeaway.com/hero-store-v2.jpg">
+    <meta property="og:url" content="https://sneakeaway.com/">
+    <meta property="og:type" content="website">
+    <meta property="og:locale" content="en_US">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Sneake® Away — compare sneaker prices">
+    <meta name="twitter:description" content="Compare sneaker offers. You buy and receive from the shop.">
+    <meta name="twitter:image" content="https://sneakeaway.com/hero-store-v2.jpg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <link rel="preload" as="image" href="hero-basket.jpg">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css?v=325e">
+    <script type="application/ld+json">
+    {"@context":"https://schema.org","@graph":[
+      {"@type":"WebSite","name":"Sneake Away","url":"https://sneakeaway.com/","inLanguage":["en","bg","fr","de","es","it"]},
+      {"@type":"Organization","name":"Sneake Away","url":"https://sneakeaway.com/","logo":"https://sneakeaway.com/logo.png"}
+    ]}
+    </script>
+</head>
+<body class="light" data-view="list">
+    <div class="util-bar" id="util-bar">
+        <div class="util-bar-left">
+        <button type="button" class="select-ui dest-chip" id="dest-chip" onclick="openDestPanel()" aria-label="Destination"><i class="fas fa-globe dest-globe" aria-hidden="true"></i> Worldwide *</button>
+        <button type="button" class="select-ui dest-chip" id="size-chip" aria-label="Size">EU —</button>
+        <button type="button" class="select-ui guide-chip" id="guide-chip" onclick="openSiteGuide()" aria-label="Guide">Guide</button>
+        </div>
+        <div class="util-bar-right" id="header-tools-extra">
+            <select class="select-ui" id="lang-select" onchange="updateUI()">
+                <option value="en" selected>EN</option>
+                <option value="bg">BG</option>
+                <option value="fr">FR</option>
+                <option value="de">DE</option>
+                <option value="es">ES</option>
+                <option value="it">IT</option>
+            </select>
+            <select class="select-ui" id="curr-select" onchange="updateUI()">
+                <option value="EUR">EUR €</option>
+                <option value="GBP">GBP £</option>
+                <option value="USD">USD $</option>
+                <option value="CHF">CHF</option>
+            </select>
+            <span id="fx-tip" class="fx-tip" title="Indicative ECB rate"></span>
+            <button class="select-ui" id="theme-toggle" aria-label="Theme"><i class="fas fa-adjust"></i></button>
+        </div>
+    </div>
+    <header>
+        <button type="button" class="menu-toggle" id="menu-toggle" aria-label="Menu" aria-expanded="false" aria-controls="main-nav">
+            <i class="fas fa-bars"></i>
+        </button>
+        <nav class="nav-cats" id="main-nav">
+            <a href="#" class="nav-link t-key" data-key="cat_men" data-cat="men">Men</a>
+            <a href="#" class="nav-link t-key" data-key="cat_women" data-cat="women">Women</a>
+            <a href="#" class="nav-link t-key" data-key="cat_kids" data-cat="kids">Kids</a>
+        </nav>
+        <a href="#" class="logo" onclick="goHome(); return false;">
+            <img src="header-light.png" alt="Sneake® Away" class="logo-img">
+        </a>
+        <div class="header-tools">
+            <div class="header-search">
+                <i class="fas fa-search" aria-hidden="true"></i>
+                <input type="text" id="header-search-input" placeholder="Search sneakers..." autocomplete="off" aria-label="Search">
+            </div>
+            <button type="button" class="bell-btn" id="header-bell-btn" onclick="showWishlistPage()" aria-label="Alerts"><i class="fa-regular fa-bell"></i><span id="header-bell-count" class="bell-count" hidden></span></button>
+            <button type="button" class="heart-btn" id="header-wish-btn" onclick="showWishlistPage()" aria-label="Wishlist"><i class="fa-regular fa-heart"></i></button>
+            <button type="button" class="icon-btn" id="header-account-btn" onclick="openAccountSheet()" aria-label="Sign in"><i class="fa-regular fa-user"></i></button>
+        </div>
+    </header>
+
+    <div class="pdp-search" id="pdp-search">
+        <i class="fas fa-search" aria-hidden="true"></i>
+        <input type="text" id="pdp-search-input" placeholder="Search sneakers..." autocomplete="off" aria-label="Search">
+    </div>
+
+    <div id="filters-sheet-backdrop" class="filters-sheet-backdrop" onclick="closeFiltersSheet()" hidden></div>
+
+    <div class="hero">
+        <div class="hero-slider">
+            <img id="hero-image" class="hero-image" src="hero-basket-v2.jpg" alt="Sneake Away" fetchpriority="high" decoding="async">
+            <button class="hero-arrow hero-arrow-left" onclick="prevSlide()" aria-label="Previous">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+            <button class="hero-arrow hero-arrow-right" onclick="nextSlide()" aria-label="Next">
+                <i class="fas fa-chevron-right"></i>
+            </button>
+            <div class="hero-dots" id="hero-dots"></div>
+        </div>
+        <div class="logo-wall">
+            <div class="logo-row">
+                <img src="https://cdn.worldvectorlogo.com/logos/nike-11.svg" alt="">
+                <img src="https://cdn.worldvectorlogo.com/logos/adidas-9.svg" alt="">
+                <img src="https://cdn.worldvectorlogo.com/logos/jordan-2.svg" alt="">
+            </div>
+        </div>
+        <div class="hero-search" hidden>
+            <input type="text" id="hero-search-input" autocomplete="off" tabindex="-1" aria-hidden="true">
+        </div>
+    </div>
+
+    <section id="promise-band" class="promise-band">
+        <h1 class="slogan-line">
+            <span class="t-key" data-key="how_1t">Find</span>.
+            <span class="t-key" data-key="how_2t">Compare</span>.
+            <span class="t-key" data-key="how_3t">Buy in shop</span>
+        </h1>
+    </section>
+
+    <section class="brand-ticker" id="brand-ticker" aria-label="Brands">
+        <div class="brand-ticker-track" id="brand-ticker-track"></div>
+    </section>
+
+    <div id="mobile-tools-bar" class="mobile-tools-bar">
+        <div class="mobile-tools-inner">
+            <div class="mobile-tools-search">
+                <i class="fas fa-search"></i>
+                <input type="text" id="mobile-search-input" placeholder="Search sneakers..." autocomplete="off">
+            </div>
+            <button type="button" class="btn-sort-sheet" id="btn-sort-sheet" onclick="toggleMobileSort()">
+                <i class="fas fa-sort"></i>
+                <span class="t-key" data-key="sort_by">Sort</span>
+            </button>
+            <button type="button" class="btn-filters-sheet" id="btn-filters-sheet" onclick="openFiltersSheet()">
+                <i class="fas fa-sliders-h"></i>
+                <span class="t-key" data-key="filters_btn">Filters</span>
+                <span class="filters-badge" id="filters-badge" style="display:none;">0</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="container">
+        <aside class="sidebar">
+            <details class="filter-drop"><summary class="filter-drop-sum"><h3 class="t-key" data-key="h_price">Price Categories</h3></summary>
+                <div class="filter-drop-panel">
+                <div class="price-ranges">
+                    <label><input type="checkbox" class="price-check" data-range="under100"> <span class="t-key" data-key="under">Under</span> <span class="cur-tag">€</span>100</label>
+                    <label><input type="checkbox" class="price-check" data-range="100-200"> <span class="cur-tag">€</span>100 - <span class="cur-tag">€</span>200</label>
+                    <label><input type="checkbox" class="price-check" data-range="200-500"> <span class="cur-tag">€</span>200 - <span class="cur-tag">€</span>500</label>
+                    <label><input type="checkbox" class="price-check" data-range="luxury"> <span class="t-key" data-key="luxury">Luxury / Rare</span></label>
+                </div>
+                <input type="range" class="range-slider" id="price-slider" min="40" max="1500" value="1500">
+                <div style="font-size:0.75rem; color:var(--gray-text); margin-top:6px; text-align:right;">
+                    Max: <span id="slider-value">1500</span> <span class="cur-tag">€</span>
+                </div>
+                </div>
+            </details>
+            <details class="filter-drop"><summary class="filter-drop-sum"><h3 class="t-key" data-key="h_color">Colors</h3></summary>
+                <div class="filter-drop-panel">
+                <div class="color-list" id="color-list"></div>
+                </div>
+            </details>
+            <details class="filter-drop"><summary class="filter-drop-sum"><h3 class="t-key" data-key="h_style">Style</h3></summary>
+                <div class="filter-drop-panel">
+                <div class="check-list" id="style-list"></div>
+                </div>
+            </details>
+            <details class="filter-drop filter-drop-wide"><summary class="filter-drop-sum"><h3 class="t-key" data-key="h_brand">Brand</h3></summary>
+                <div class="filter-drop-panel">
+                <div class="check-list check-list-wide" id="brand-list"></div>
+                </div>
+            </details>
+            <!-- Line / Height hidden until the feed has those fields -->
+            <details class="filter-drop"><summary class="filter-drop-sum"><h3 class="t-key" data-key="h_material">Materials</h3></summary>
+                <div class="filter-drop-panel">
+                <div class="check-list" id="material-list"></div>
+                </div>
+            </details>
+            <button type="button" class="btn-clear-filters t-key" data-key="clear_filters" onclick="clearAllFilters()">Clear filters</button>
+        </aside>
+
+        <main class="products-wrapper">
+            <div class="top-controls">
+                <div class="top-controls-left">
+                    <div id="view-toggle" class="view-toggle">
+                        <button type="button" data-view-btn="look">Look</button>
+                        <button type="button" class="on" data-view-btn="list">List</button>
+                    </div>
+                    <div class="page-size-drop" id="page-size-drop">
+                        <span class="page-size-label t-key" data-key="per_page">Per page</span>
+                        <button type="button" class="page-size-trigger" id="page-size-trigger" onclick="togglePageSizeDrop()" aria-label="Products per page">24</button>
+                        <div class="page-size-options" id="page-size-options"></div>
+                    </div>
+                </div>
+                <div class="top-controls-right">
+                    <div class="sort-dropdown">
+                        <div class="sort-trigger" onclick="toggleSortDropdown()">
+                            <span id="active-sort-text" class="t-key" data-key="sort_by">Sort By</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                        <div class="sort-options" id="sort-options-list"></div>
+                    </div>
+                    <div id="page-dots-top" class="page-dots" aria-label="Pages"></div>
+                </div>
+            </div>
+            <div class="products" id="products-container"></div>
+            <div id="load-more-container" style="width:100%; display:flex; justify-content:center; padding:50px 0 80px 0;"></div>
+        </main>
+    </div>
+    <main id="product-page" class="product-page" hidden></main>
+
+    <footer>
+        <div class="footer-box">
+            <h3 class="t-key" data-key="f_about">About Us</h3>
+            <p class="t-key" data-key="f_about_text">We compare sneaker offers. We do not hold stock.</p>
+            <p><a href="about.html" class="t-key" data-key="f_about">About</a> · <a href="faq.html">FAQ</a> · <a href="partners.html" class="t-key" data-key="cat_partners">Partners</a></p>
+        </div>
+        <div class="footer-box">
+            <h3 class="t-key" data-key="f_follow">Follow Us</h3>
+            <p class="t-key" data-key="social_soon">Social profiles coming soon.</p>
+        </div>
+        <div class="footer-box">
+            <h3 class="t-key" data-key="f_contact">Contacts</h3>
+            <p>Email: <a href="mailto:sneakeaway@gmail.com">sneakeaway@gmail.com</a></p>
+            <p><a href="privacy.html" class="t-key" data-key="privacy">Privacy</a> · <a href="cookies.html">Cookies</a> · <a href="terms.html">Terms</a></p>
+            <p class="affiliate-note t-key" data-key="affiliate_note">We may earn a commission when you buy through links on this site. Your price does not change.</p>
+            <p class="affiliate-note t-key" data-key="duties_note">Orders from another country or outside the EU may incur duties, VAT or courier fees. The shop confirms the final amount.</p>
+        </div>
+    </footer>
+
+    <button id="backToTop" title="Go to top" aria-label="Back to top">
+        <i class="fas fa-arrow-up"></i>
+    </button>
+
+    <div id="size-guide-modal" class="size-guide-modal" hidden role="dialog" aria-labelledby="size-guide-title" onclick="if(event.target===this)closeSizeGuide()">
+        <div class="size-guide-panel">
+            <div class="size-guide-head">
+                <h2 id="size-guide-title" class="t-key" data-key="size_guide">Size chart</h2>
+                <button type="button" class="size-guide-close" onclick="closeSizeGuide()" aria-label="Close">&times;</button>
+            </div>
+            <p class="size-guide-note t-key" data-key="size_guide_note">Adult sneakers, approximate conversion. The shop listing is the source of truth.</p>
+            <div class="size-guide-scroll">
+                <table class="size-guide-table" id="size-guide-table"></table>
+            </div>
+        </div>
+    </div>
+
+    <div id="cookie-bar" class="cookie-bar" hidden>
+        <p class="t-key" data-key="cookie_txt">We store language, theme, country and wishlist on this device (localStorage). No ad cookies yet.</p>
+        <button type="button" id="cookie-ok" class="t-key" data-key="cookie_ok">OK</button>
+    </div>
+    <script src="script.js?v=325e"></script>
+    <script src="sa-live.js?v=325aj"></script>
+</body>
+</html>

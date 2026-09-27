@@ -1,0 +1,72 @@
+{
+  "updated": "2026-09-22",
+  "note": "Shop-level VAT/DDP. Estimate only. Shop listing is the amount that counts.",
+  "shops": {
+    "Sizeer": {
+      "origin": "EU",
+      "vat": "included",
+      "ddp": [
+        "LT",
+        "PL",
+        "DE",
+        "CZ",
+        "SK",
+        "RO",
+        "BG"
+      ]
+    },
+    "Queens": {
+      "origin": "EU",
+      "vat": "included",
+      "ddp": [
+        "FR",
+        "BE",
+        "DE",
+        "ES",
+        "IT",
+        "NL",
+        "AT",
+        "PT",
+        "IE",
+        "LU"
+      ]
+    },
+    "iQueens": {
+      "origin": "EU",
+      "vat": "included",
+      "ddp": [
+        "FR",
+        "BE",
+        "DE",
+        "ES",
+        "IT",
+        "NL",
+        "AT",
+        "PT",
+        "IE",
+        "LU"
+      ]
+    },
+    "Oxygen": {
+      "origin": "GB",
+      "vat": "included",
+      "ddp": [
+        "GB",
+        "UK"
+      ]
+    },
+    "Footshop": {
+      "origin": "EU",
+      "vat": "included",
+      "ddp": [
+        "CZ",
+        "SK",
+        "HU",
+        "RO",
+        "PL",
+        "DE",
+        "AT"
+      ]
+    }
+  }
+}
