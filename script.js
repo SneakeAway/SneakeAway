@@ -740,16 +740,19 @@ let currentSort = 's_pop';
 let selectedSizes = [];       // EU sizes (numbers)
 let sizeChipSystem = 'eu';
 
+const HIDE_EU_ON_OTHER = { '37':1, '39.5':1, '41.5':1, '46.5':1 };
 function cleanEuSizes(sizes) {
     const raw = (sizes || []).map(s => String(s));
     const nums = raw.map(Number).filter(n => !isNaN(n));
     const adult = nums.some(n => n >= 36 && n <= 50);
-    if (!adult) return raw;
+    const sys = (typeof sizeChipSystem !== 'undefined' && sizeChipSystem) ? sizeChipSystem : 'eu';
     return raw.filter(s => {
         const n = Number(s);
-        if (isNaN(n)) return true;
-        if (n >= 1 && n <= 13.9) return false;
-        if (n > 48) return false;
+        if (adult) {
+            if (!isNaN(n) && n >= 1 && n <= 13.9) return false;
+            if (!isNaN(n) && n > 48) return false;
+        }
+        if (sys !== 'eu' && HIDE_EU_ON_OTHER[String(s)]) return false;
         return true;
     });
 }
@@ -794,6 +797,9 @@ function setSizeChipSystem(k, reload) {
         if (typeof sizeIsOn === 'function') b.classList.toggle('on', sizeIsOn(b.getAttribute('data-size')));
     });
     try { if (typeof renderSizeChipLive === 'function') renderSizeChipLive(); } catch (e) {}
+    try {
+        if (document.body.classList.contains('product-view') && typeof initProductPage === 'function') initProductPage();
+    } catch (e) {}
 }
 
 
@@ -1153,7 +1159,7 @@ function openWishlistSelector(id, e) {
                 </div>
 
                 <button id="confirm-wishlist-btn" onclick="confirmWishlistAdd(${jsId(p.id)})" 
-                        style="width:100%; padding:14px; background:#C9A84C; color:#111; border:none; border-radius:10px; font-weight:700; font-size:1rem; cursor:pointer; opacity:0.5;" disabled>
+                        style="width:100%; padding:14px; background:#E63946; color:white; border:none; border-radius:10px; font-weight:700; font-size:1rem; cursor:pointer; opacity:0.5;" disabled>
                     ${dict.add_to_wishlist}
                 </button>
             </div>
@@ -1181,8 +1187,8 @@ function selectWishColor(btn, color) {
         b.style.borderColor = 'var(--border)';
         b.style.background = 'var(--bg)';
     });
-    btn.style.borderColor = '#C9A84C';
-    btn.style.background = 'rgba(201, 168, 76, 0.18)';
+    btn.style.borderColor = '#E63946';
+    btn.style.background = 'rgba(230, 57, 70, 0.15)';
     selectedWishColor = color;
     const modal = document.getElementById('wishlist-selector-modal');
     const img = modal && modal.querySelector('img');
@@ -1198,8 +1204,8 @@ function selectWishSize(btn, size) {
         b.style.borderColor = 'var(--border)';
         b.style.background = 'var(--bg)';
     });
-    btn.style.borderColor = '#C9A84C';
-    btn.style.background = 'rgba(201, 168, 76, 0.18)';
+    btn.style.borderColor = '#E63946';
+    btn.style.background = 'rgba(230, 57, 70, 0.15)';
     selectedWishSize = size;
     checkWishlistReady();
 }
@@ -1657,7 +1663,12 @@ function rankedOffers(p, checkCountry) {
         return { ...o, _ships: ships, _total: total, _shipCost: offerShippingCost(o, country) };
     });
     if (country) {
-        list = list.filter(o => o._ships !== false);
+        const ship = list.filter(o => o._ships !== false);
+        if (ship.length) list = ship;
+    }
+    if (typeof selectedSizes !== 'undefined' && selectedSizes.length) {
+        const sized = list.filter(o => selectedSizes.some(sz => offerHasSize(o, sz)));
+        if (sized.length) list = sized;
     }
     return list.sort((a, b) => (Number(a.price) || 0) - (Number(b.price) || 0));
 }
@@ -2707,7 +2718,7 @@ async function initProductPage() {
     }
     if (!p) {
         try {
-            const res = await fetch('products.json', { cache: 'no-store' });
+            const res = await fetch('products.json', { cache: 'force-cache' });
             if (res.ok) {
                 const all = await res.json();
                 if (Array.isArray(all)) {
@@ -2842,12 +2853,7 @@ async function initProductPage() {
 // ==================== QUICK VIEW ====================
 
 function refreshQvQuiet(id) {
-    const wrap = document.getElementById('quickview-modal');
-    if (!wrap) return;
-    wrap.querySelectorAll('.qv-opts .p-chips .p-chip[data-size]').forEach(b => {
-        b.classList.toggle('on', typeof sizeIsOn === 'function' && sizeIsOn(b.getAttribute('data-size')));
-    });
-    try { renderDestChip(); } catch (e) {}
+    try { if (id && typeof showQuickView === 'function') showQuickView(id); } catch (e) {}
 }
 
 function showQuickView(id) {
@@ -2864,7 +2870,7 @@ function showQuickView(id) {
     const checkC = (shipMode === 'tome' && currentCountry) ? currentCountry : '';
     const sortedOffers = rankedOffers(p, checkC || null);
     const displayOffers = sortedOffers;
-    const bestOffer = (shipMode === 'tome' ? sortedOffers[0] : displayOffers[0]) || sortedOffers[0];
+    const bestOffer = (sortedOffers[0] || displayOffers[0] || (p.offers || [])[0] || { price: 0, shop: '', url: '#' });
     const bestTotal = Math.round((bestOffer._total != null ? bestOffer._total : (bestOffer.price + (bestOffer.shipping||0))) * rate);
     const origPrice = p.originalPrice ? Math.round(p.originalPrice * rate) : null;
     const isDiscounted = origPrice && origPrice > bestTotal;
@@ -2915,7 +2921,6 @@ function showQuickView(id) {
                         </div>
                         <p class="duties-mini">${dict.duties_note}</p>
                         ${offersHTML}
-                        <p class="affiliate-mini">${dict.affiliate_note}</p>
                     </div>
 
                     <button type="button" class="qv-go-pdp" onclick="closeQuickView(); openProduct(${jsId(p.id)})">
@@ -4070,6 +4075,7 @@ function leaveProductView() {
     try { document.title = window.HOME_DOC_TITLE || 'Sneake® Away — compare sneaker prices'; } catch (e) {}
 
     document.body.classList.remove('product-view');
+    try { document.documentElement.classList.remove('pdp-boot'); } catch (e) {}
     const root = document.getElementById('product-page');
     if (root) {
         root.hidden = true;
@@ -4251,6 +4257,8 @@ async function loadProductsLiteRest() {
 
 async function loadProductsFull() {
     if (productsFull) return productsFull;
+    if (window.__saFullPromise) return window.__saFullPromise;
+    window.__saFullPromise = (async function () {
     try {
         const res = await fetch('products.json', { cache: 'force-cache' });
         if (res.ok) {
@@ -4271,6 +4279,8 @@ async function loadProductsFull() {
         }
     } catch (e) {}
     return productsFull;
+    })();
+    return window.__saFullPromise;
 }
 
 let CATALOG_IDX = null;
@@ -4614,6 +4624,7 @@ window.onload = async () => {
         const savedSz = JSON.parse(localStorage.getItem('sa_fit_eus') || '[]');
         if (Array.isArray(savedSz) && savedSz.length) selectedSizes = savedSz.map(Number).filter(n => !isNaN(n));
     } catch (e) {}
+    try { loadShipPrefs(); } catch (e) {}
     if (/product\.html/i.test(location.pathname)) {
         try { await loadProducts(); } catch (e) { console.error('loadProducts', e); productsData = FALLBACK_PRODUCTS; }
         if (!productsData || !productsData.length) productsData = mergeCatalogByModel(FALLBACK_PRODUCTS || []);
@@ -4759,6 +4770,10 @@ function applyDestFromPanel() {
     renderDestChip();
     scheduleCatalogRender();
     try { if (document.body.classList.contains('product-view')) initProductPage(); } catch (e) {}
+    try {
+        const q = document.getElementById('quickview-modal');
+        if (q) { const id = q.getAttribute('data-pid'); if (id && typeof showQuickView === 'function') showQuickView(id); }
+    } catch (e) {}
 }
 function continueWorldwide() {
     shipMode = 'ww';
@@ -4768,6 +4783,10 @@ function continueWorldwide() {
     renderDestChip();
     scheduleCatalogRender();
     try { if (document.body.classList.contains('product-view')) initProductPage(); } catch (e) {}
+    try {
+        const q = document.getElementById('quickview-modal');
+        if (q) { const id = q.getAttribute('data-pid'); if (id && typeof showQuickView === 'function') showQuickView(id); }
+    } catch (e) {}
 }
 function closeDestPanel() {
     const el = document.getElementById('dest-panel');

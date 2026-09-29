@@ -77,7 +77,7 @@ window.HOME_DOC_TITLE = document.title || 'Sneake® Away — compare sneaker pri
     ship_ww: { en: 'Shipping amount only after you pick a destination.', bg: 'Сума за доставка само след избор на дестинация.', fr: 'Frais de port après le choix d’une destination.', de: 'Versandpreis erst nach Wahl des Ziels.', es: 'Gastos de envío tras elegir destino.', it: 'Spedizione solo dopo la destinazione.' },
     duty: { en: 'Duties / VAT', bg: 'Мито / ДДС', fr: 'Droits / TVA', de: 'Zoll / MwSt.', es: 'Aranceles / IVA', it: 'Dazi / IVA' },
     delivered: { en: 'delivered', bg: 'с доставка', fr: 'livré', de: 'geliefert', es: 'entregado', it: 'consegnato' },
-    for_foot: { en: 'For your foot: try EU {s}', bg: 'За твоя крак: пробвай EU {s}', fr: 'Pour votre pied : essayez EU {s}', de: 'Für deinen Fuß: EU {s} probieren', es: 'Para tu pie: prueba EU {s}', it: 'Per il tuo piede: prova EU {s}' },
+    for_foot: { en: 'For your foot: try {s}', bg: 'За твоя крак: пробвай {s}', fr: 'Pour votre pied : essayez {s}', de: 'Für deinen Fuß: {s} probieren', es: 'Para tu pie: prueba {s}', it: 'Per il tuo piede: prova {s}' },
     size_title: { en: 'Your size', bg: 'Твоят размер', fr: 'Votre pointure', de: 'Deine Größe', es: 'Tu talla', it: 'La tua taglia' },
     save: { en: 'Save', bg: 'Запази', fr: 'Enregistrer', de: 'Speichern', es: 'Guardar', it: 'Salva' },
     skip: { en: 'Skip', bg: 'Пропусни', fr: 'Passer', de: 'Überspringen', es: 'Omitir', it: 'Salta' },
@@ -88,9 +88,9 @@ window.HOME_DOC_TITLE = document.title || 'Sneake® Away — compare sneaker pri
     has_size: { en: 'Has {s}', bg: 'Има {s}', fr: 'Pointure {s}', de: 'Größe {s} da', es: 'Talla {s}', it: 'Taglia {s}' },
     no_size: { en: 'No {s}', bg: 'Няма {s}', fr: 'Pas de {s}', de: 'Keine {s}', es: 'Sin {s}', it: 'Niente {s}' },
     offers: { en: 'Offers', bg: 'Оферти', fr: 'Offres', de: 'Angebote', es: 'Ofertas', it: 'Offerte' },
-    same_eu: { en: 'Usually the same EU size as {r}.', bg: 'Обикновено същият EU номер като {r}.', fr: 'Souvent la même pointure UE que {r}.', de: 'Meist dieselbe EU-Größe wie {r}.', es: 'Suele ser la misma talla EU que {r}.', it: 'Di solito stessa taglia EU di {r}.' },
-    half_up: { en: 'Often +½ EU versus {r}.', bg: 'Често +½ EU спрямо {r}.', fr: 'Souvent +½ UE par rapport à {r}.', de: 'Oft +½ EU gegenüber {r}.', es: 'A menudo +½ EU frente a {r}.', it: 'Spesso +½ EU rispetto a {r}.' },
-    half_down: { en: 'Often −½ EU versus {r}.', bg: 'Често −½ EU спрямо {r}.', fr: 'Souvent −½ UE par rapport à {r}.', de: 'Oft −½ EU gegenüber {r}.', es: 'A menudo −½ EU frente a {r}.', it: 'Spesso −½ EU rispetto a {r}.' },
+    same_eu: { en: 'Usually the same size as {r}.', bg: 'Обикновено същият номер като {r}.', fr: 'Souvent la même pointure que {r}.', de: 'Meist dieselbe Größe wie {r}.', es: 'Suele ser la misma talla que {r}.', it: 'Di solito stessa taglia di {r}.' },
+    half_up: { en: 'Often +½ size versus {r}.', bg: 'Често +½ номер спрямо {r}.', fr: 'Souvent +½ par rapport à {r}.', de: 'Oft +½ gegenüber {r}.', es: 'A menudo +½ frente a {r}.', it: 'Spesso +½ rispetto a {r}.' },
+    half_down: { en: 'Often −½ size versus {r}.', bg: 'Често −½ номер спрямо {r}.', fr: 'Souvent −½ par rapport à {r}.', de: 'Oft −½ gegenüber {r}.', es: 'A menudo −½ frente a {r}.', it: 'Spesso −½ rispetto a {r}.' },
     narrower: { en: 'Narrower last than {r}.', bg: 'По-тесен калъп от {r}.', fr: 'Forme plus étroite que {r}.', de: 'Schmaler als {r}.', es: 'Horma más estrecha que {r}.', it: 'Forma più stretta di {r}.' },
     wider: { en: 'Roomier last than {r}.', bg: 'По-широк калъп от {r}.', fr: 'Forme plus large que {r}.', de: 'Weiter als {r}.', es: 'Horma más ancha que {r}.', it: 'Forma più ampia di {r}.' }
   };
@@ -247,6 +247,7 @@ function deliveryLine(offer, country) {
       root.hidden = true;
       root.innerHTML = '';
       document.body.classList.remove('product-view');
+      try { document.documentElement.classList.remove('pdp-boot'); } catch (e) {}
       return;
     }
     let p = (productsData || []).find(item => String(item.id) === String(rawId) || Number(item.id) === Number(rawId));
@@ -261,7 +262,7 @@ function deliveryLine(offer, country) {
     }
     if (!p) {
       try {
-        const res = await fetch('products.json', { cache: 'no-store' });
+        const res = await fetch('products.json', { cache: 'force-cache' });
         if (res.ok) {
           const all = await res.json();
           if (Array.isArray(all)) {
@@ -316,9 +317,9 @@ function deliveryLine(offer, country) {
     const shipYes = ranked;
     const top = ranked[0];
     const topSale = top && isSale(top, p);
-    const showLanded = destLocked && top && top._ships === true;
+    const showLanded = false;
     const topNum = top
-      ? Math.round(((showLanded && top._total != null) ? top._total : (top.price || 0)) * rate)
+      ? Math.round((top.price || 0) * rate)
       : (rangeInfo.min != null ? rangeInfo.min : null);
 
     const boxes = ranked.map((offer, i) => {
@@ -330,8 +331,8 @@ function deliveryLine(offer, country) {
       const ship = shipLine(offer, dest || null, rate, symbol);
       const sizeTxt = selectedProductSize
         ? (offerHasSize(offer, selectedProductSize)
-          ? tx('has_size').replace('{s}', selectedProductSize)
-          : tx('no_size').replace('{s}', selectedProductSize))
+          ? tx('has_size').replace('{s}', (typeof labelSize==='function'?labelSize(selectedProductSize):selectedProductSize))
+          : tx('no_size').replace('{s}', (typeof labelSize==='function'?labelSize(selectedProductSize):selectedProductSize)))
         : '';
       const badge = rankBadge(i, useMedals && offer._ships === true);
       const url = (typeof shopHref === 'function' ? shopHref(offer) : (offer.url || '#'));
@@ -390,6 +391,7 @@ function deliveryLine(offer, country) {
         </div>
       </article>`;
     }).join('');
+    const emptyOffers = ranked.length ? '' : '<p class="product-miss-price">No offer for this size / destination</p>';
 
     const sibs = (typeof uniqueVariants === 'function') ? uniqueVariants(p) : [];
     const sizes = p.sizes || [];
@@ -439,7 +441,7 @@ function deliveryLine(offer, country) {
         <div class="fit-track"><i class="fit-knob" style="left:${widthPct}%"></i></div>
         <span>${tx('w_wide')}</span>
       </div>
-      <p class="fit-footline">${tx('for_foot').replace('{s}', footEU || '—')} · ${esc(note.text)}</p>
+      <p class="fit-footline">${tx('for_foot').replace('{s}', (footEU && typeof labelSize==='function') ? (String(sizeChipSystem||'eu').toUpperCase() + ' ' + labelSize(footEU)) : (footEU || '—'))} · ${esc(note.text)}</p>
       <p class="fit-pick-label">${tx('fit_pick')}</p>
       <div class="fit-refs">${suggestions.map(s => `<button type="button" class="fit-ref${refKey === s.key ? ' on' : ''}" data-ref="${s.key}">${prettyLast(s.key)}</button>`).join('')}
         <label class="fit-other">${tx('fit_other')}
@@ -458,9 +460,13 @@ function deliveryLine(offer, country) {
     </div>`;
 
     const priceClass = topSale ? 'price-sale' : 'price-regular';
-    const headPrice = topNum != null
-      ? `<p class="${priceClass} product-gold-price">${symbol}${topNum}${showLanded ? ' <span class="delivered-tag">'+tx('delivered')+'</span>' : ''}</p>`
-      : `<p class="price-range-main product-gold-price">${rangeInfo.html && rangeInfo.html !== '—' ? rangeInfo.html : symbol + '—'}</p>`;
+    const rangeHtml = rangeInfo && rangeInfo.html && rangeInfo.html !== '—' ? rangeInfo.html : '';
+    const showRange = !!(rangeInfo && rangeInfo.min != null && rangeInfo.max != null && Number(rangeInfo.min) !== Number(rangeInfo.max));
+    const headPrice = showRange
+      ? `<p class="price-range-main product-gold-price">${rangeHtml}</p>`
+      : (topNum != null
+        ? `<p class="${priceClass} product-gold-price">${symbol}${topNum}</p>`
+        : `<p class="price-range-main product-gold-price">${rangeHtml || (symbol + '—')}</p>`);
 
     root.innerHTML = `
       <a class="product-back" href="${(typeof catalogFile==='function'?catalogFile():'index.html')}" onclick="event.preventDefault(); leaveProductView(); history.pushState({},'', (typeof catalogFile==='function'?catalogFile():'index.html') + location.search.replace(/[?&]p=[^&]*/,'').replace(/^&/,'?')); if(!(document.getElementById('products-container')||{}).querySelector||!document.getElementById('products-container').querySelector('.card')){ if(typeof scheduleCatalogRender==='function') scheduleCatalogRender(); }">← ${dict.cat_all || 'All'}</a>
@@ -498,6 +504,12 @@ function deliveryLine(offer, country) {
       </div>
       ${railsHTML}`;
 
+    const siteFoot = document.querySelector('body > footer');
+    if (siteFoot && !root.querySelector('.pdp-footer')) {
+      const clone = siteFoot.cloneNode(true);
+      clone.className = 'pdp-footer';
+      root.appendChild(clone);
+    }
     renderDestChip();
     const mainImg = document.getElementById('product-main-img');
     if (mainImg) mainImg.onclick = () => openImageZoom(mainImg.src, p.name);

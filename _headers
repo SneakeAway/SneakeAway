@@ -19,7 +19,10 @@
   Cache-Control: public, max-age=0, must-revalidate
 
 /products.json
-  Cache-Control: public, max-age=60, must-revalidate
+  Cache-Control: public, max-age=86400
+
+/products-lite.json
+  Cache-Control: public, max-age=86400
 
 /index.html
   Cache-Control: public, max-age=0, must-revalidate
