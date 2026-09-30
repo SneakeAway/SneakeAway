@@ -1,10 +1,16 @@
 {
-  "source": "sneakers only · colorway cards · Sizeer + Queens + Oxygen",
-  "sizeerColorways": 1811,
-  "queensColorways": 4742,
-  "oxygenTrainers": 302,
-  "cards": 6492,
-  "count": 6492,
-  "multiShopCards": 330,
-  "gbpEur": 1.17
+  "count": 11962,
+  "shops": [
+    "Footshop",
+    "Oxygen",
+    "Queens",
+    "Sizeer"
+  ],
+  "fx": {
+    "EUR": 1.0,
+    "GBP": 1.17,
+    "CHF": 1.06,
+    "PLN": 0.23,
+    "USD": 0.92
+  }
 }
