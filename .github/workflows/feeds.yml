@@ -27,7 +27,7 @@ jobs:
               "http://datatransfer.cj.com/datatransfer/files/8059923/outgoing/productcatalog/${id}/${name}.txt.zip"
           }
           pull 320958 "Sizeer_lt-SizeerLT_google_all-shopping"
-          pull 321395 "iqueens_fr-iqueensfr_google_all-shopping"
+          pull 321395 "iQueens_fr-iQueensFR_google_all-shopping"
           pull 321395 "Footshop_ch-FootshopCH_google_all-shopping"
 
       - name: Download Oxygen feed
