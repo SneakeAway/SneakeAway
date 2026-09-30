@@ -1,0 +1,54 @@
+name: Feeds
+
+on:
+  schedule:
+    # 06:30 Europe/Sofia. GitHub cron is UTC, so 03:30 UTC.
+    - cron: "30 3 * * *"
+  workflow_dispatch:
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download CJ feeds
+        env:
+          CJ_USER: ${{ secrets.CJ_USER }}
+          CJ_PASS: ${{ secrets.CJ_PASS }}
+        run: |
+          set -euo pipefail
+          mkdir -p feeds
+          pull() {
+            local id="$1" name="$2"
+            curl -fsS -u "$CJ_USER:$CJ_PASS" \
+              -o "feeds/${name}.zip" \
+              "https://datatransfer.cj.com/datatransfer/files/8059923/outgoing/productcatalog/${id}/${name}.txt.zip"
+          }
+          pull 320958 "Sizeer_lt-SizeerLT_google_all-shopping"
+          pull 321395 "iqueens_fr-iqueensfr_google_all-shopping"
+          pull 321395 "Footshop_ch-FootshopCH_google_all-shopping"
+
+      - name: Download Oxygen feed
+        env:
+          OXYGEN_HOST: ${{ secrets.OXYGEN_HOST }}
+          OXYGEN_PORT: ${{ secrets.OXYGEN_PORT }}
+          OXYGEN_USER: ${{ secrets.OXYGEN_USER }}
+          OXYGEN_PASS: ${{ secrets.OXYGEN_PASS }}
+          OXYGEN_PATH: ${{ secrets.OXYGEN_PATH }}
+        run: |
+          set -euo pipefail
+          mkdir -p feeds/oxygen
+          sudo apt-get update -qq && sudo apt-get install -y -qq lftp
+          lftp -u "$OXYGEN_USER","$OXYGEN_PASS" -p "${OXYGEN_PORT:-22}" "sftp://$OXYGEN_HOST" -e "set sftp:auto-confirm yes; get \"$OXYGEN_PATH\" -o feeds/oxygen/oxygen.txt; bye"
+
+      - name: Stop if a feed is empty
+        run: |
+          set -euo pipefail
+          find feeds -type f -size 0 -print | grep -q . && { echo "empty feed"; exit 1; }
+          find feeds -type f -print
+
+      - name: Build catalog
+        run: |
+          echo "Merge script is not in the repo yet. Not committing."
+          exit 1
