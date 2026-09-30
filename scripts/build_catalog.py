@@ -100,13 +100,15 @@ def images_of(row):
     return out[:8]
 
 
+def norm(row):
+    return {k.lower(): (v or "") for k, v in row.items() if k}
+
 def shoe_row(row):
+    cat = row.get("google_product_category_name") or row.get("product_type") or ""
+    if "shoes" in cat.lower():
+        return True
     blob = " ".join(row.get(k) or "" for k in ("google_product_category", "product_type", "title"))
-    if SKIP.search(blob) and not SHOE.search(blob):
-        return False
-    if HEEL.search(blob) and "pump" not in (row.get("title") or "").lower():
-        return False
-    return bool(SHOE.search(blob) or "shoe" in blob.lower())
+    return bool(SHOE.search(blob) or re.search(r"\bboots?\b", blob, re.I))
 
 
 def offer(shop, origin, price, was, url, color, sizes, image, gtin, mpn, tax):
@@ -156,6 +158,7 @@ def from_google(path, shop, origin, fx, cards):
     delim = "\t" if sample.count("\t") > sample.count(",") else ","
     reader = csv.DictReader(io.StringIO(text), delimiter=delim)
     for row in reader:
+        row = norm(row)
         title = row.get("title") or ""
         if not shoe_row(row):
             continue
@@ -224,7 +227,7 @@ def from_oxygen(path, fx, cards):
                 continue
             title = cols[1]
             cat_name = cols[3]
-            if not SHOE.search(title + " " + cat_name):
+            if not re.search(r"shoe|sneaker|trainer|footwear|boot", title + " " + cat_name, re.I):
                 continue
             if SKIP.search(title) and not SHOE.search(title):
                 continue
