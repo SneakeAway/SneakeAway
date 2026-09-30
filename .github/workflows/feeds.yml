@@ -21,9 +21,10 @@ jobs:
           mkdir -p feeds
           pull() {
             local id="$1" name="$2"
-            curl -fsS -u "$CJ_USER:$CJ_PASS" \
+            echo "pull ${id}/${name}"
+            curl -fL --retry 2 -u "$CJ_USER:$CJ_PASS" \
               -o "feeds/${name}.zip" \
-              "https://datatransfer.cj.com/datatransfer/files/8059923/outgoing/productcatalog/${id}/${name}.txt.zip"
+              "http://datatransfer.cj.com/datatransfer/files/8059923/outgoing/productcatalog/${id}/${name}.txt.zip"
           }
           pull 320958 "Sizeer_lt-SizeerLT_google_all-shopping"
           pull 321395 "iqueens_fr-iqueensfr_google_all-shopping"
