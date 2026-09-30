@@ -43,13 +43,21 @@ jobs:
           sudo apt-get update -qq && sudo apt-get install -y -qq lftp
           lftp -u "$OXYGEN_USER","$OXYGEN_PASS" -p "${OXYGEN_PORT:-22}" "sftp://$OXYGEN_HOST" -e "set sftp:auto-confirm yes; get \"$OXYGEN_PATH\" -o feeds/oxygen/oxygen.txt; bye"
 
-      - name: Stop if a feed is empty
-        run: |
-          set -euo pipefail
-          find feeds -type f -size 0 -print | grep -q . && { echo "empty feed"; exit 1; }
-          find feeds -type f -print
-
       - name: Build catalog
+        run: python3 scripts/build_catalog.py
+
+      - name: Upload catalog artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: catalog
+          path: |
+            products.json
+            products-lite.json
+            catalog/first.json
+            catalog/meta.json
+          retention-days: 5
+
+      - name: Do not deploy yet
         run: |
-          echo "Merge script is not in the repo yet. Not committing."
+          echo "Catalog built and uploaded as artifact. Not committing, so Netlify does not deploy."
           exit 1
