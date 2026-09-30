@@ -62,22 +62,30 @@ def slug(text):
     return text[:80] or "item"
 
 
-def gender(row, title):
-    g = (row.get("gender") or "").strip().lower()
+def gender(row, title, sizes=None):
+    # Same order as inferOfferGender in script.js.
+    # age_group is the feed field for the kids test the site does on the name.
     age = (row.get("age_group") or "").strip().lower()
-    if g in ("female", "women", "woman"):
-        return "women"
-    if g in ("male", "men", "man"):
-        return "men"
-    if g in ("unisex",):
-        return "men"
-    blob = f"{g} {age} {title}".lower()
-    if any(x in blob for x in ("kid", "child", "junior", "infant", "boy", "girl")):
+    if age in ("kids", "infant", "toddler", "newborn"):
         return "kids"
-    if any(x in blob for x in ("women", "woman", "female", "wmns")):
+    blob = " ".join([
+        row.get("gender") or "",
+        row.get("product_type") or "",
+        title or "",
+        row.get("link") or "",
+    ]).lower()
+    if re.search(r"moterims|women|woman|womens|dama|femme|donna|damskie|ladies|female|wmns", blob):
         return "women"
-    if any(x in blob for x in (" men", "male", "mens")):
+    if re.search(r"vaikams|kids|\bkid\b|child|junior|youth|infant|toddler", blob):
+        return "kids"
+    if re.search(r"vyrams|\bmen\b|\bmens\b|uomo|homme|herren|meskie|\bmale\b", blob):
         return "men"
+    nums = [n for n in (sizes or []) if 30 <= n <= 50]
+    if nums:
+        if max(nums) <= 41 and min(nums) <= 39:
+            return "women"
+        if min(nums) >= 40:
+            return "men"
     return "men"
 
 
@@ -178,10 +186,10 @@ def from_google(path, shop, origin, fx, cards):
         brand = (row.get("brand") or "").strip() or "Unknown"
         color = (row.get("color") or "").split("/")[0].strip() or "Color"
         mpn = (row.get("mpn") or row.get("item_group_id") or row.get("id") or "").strip()
-        cat = gender(row, title)
+        sz = sizes_of(row, title)
+        cat = gender(row, title, sz)
         model = re.sub(r"\s+", " ", title).strip()
         model = re.sub(re.escape(brand), "", model, flags=re.I).strip(" -")
-        sz = sizes_of(row, title)
         imgs = images_of(row)
         if not imgs:
             continue
