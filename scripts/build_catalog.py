@@ -63,13 +63,20 @@ def slug(text):
 
 
 def gender(row, title):
-    g = (row.get("gender") or row.get("age_group") or "").lower()
-    blob = f"{g} {title}".lower()
-    if any(x in blob for x in ("kid", "child", "junior", "boy", "girl", "infant")):
-        return "kids"
-    if "women" in blob or " wmns" in blob or blob.startswith("w ") or " female" in blob:
+    g = (row.get("gender") or "").strip().lower()
+    age = (row.get("age_group") or "").strip().lower()
+    if g in ("female", "women", "woman"):
         return "women"
-    if "men" in blob or "male" in blob:
+    if g in ("male", "men", "man"):
+        return "men"
+    if g in ("unisex",):
+        return "men"
+    blob = f"{g} {age} {title}".lower()
+    if any(x in blob for x in ("kid", "child", "junior", "infant", "boy", "girl")):
+        return "kids"
+    if any(x in blob for x in ("women", "woman", "female", "wmns")):
+        return "women"
+    if any(x in blob for x in (" men", "male", "mens")):
         return "men"
     return "men"
 
@@ -217,7 +224,8 @@ def oxygen_url(raw):
 
 def from_oxygen(path, fx, cards):
     n = 0
-    opener = gzip.open if path.endswith(".gz") else open
+    raw = open(path, "rb").read(2)
+    opener = gzip.open if raw == b"\x1f\x8b" or path.endswith(".gz") else open
     with opener(path, "rt", errors="replace") as f:
         for line in f:
             if line.startswith("HDR|") or line.startswith("TRL|") or not line.strip():
@@ -231,10 +239,10 @@ def from_oxygen(path, fx, cards):
                 continue
             if SKIP.search(title) and not SHOE.search(title):
                 continue
-            price, _ = money(cols[14] + " GBP", fx)
+            price, _ = money((cols[13] or cols[14]) + " GBP", fx)
             if not price:
                 continue
-            brand = cols[17].strip() or "Unknown"
+            brand = (cols[16] or cols[20] or "Unknown").strip()
             color = (cols[2].split("-")[-1] if "-" in cols[2] else "Color").title()
             mpn = cols[19].strip() if len(cols) > 19 else cols[0]
             imgs = [cols[6]] if cols[6].startswith("http") else []
