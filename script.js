@@ -2860,7 +2860,7 @@ function showQuickView(id) {
     closeQuickView();
     const p = (productsData || []).find(item => String(item.id) === String(id));
     if (!p) return;
-    if (!(p.images && p.images.length > 2)) { loadProductsFull().then(() => { const q=document.getElementById('quickview-modal'); if(q && q.getAttribute('data-pid')==String(id)) showQuickView(id); }); }
+    if (!(p.images && p.images.length > 2)) { loadProductsFull(id).then(() => { const q=document.getElementById('quickview-modal'); if(q && q.getAttribute('data-pid')==String(id)) showQuickView(id); }); }
     applyProductVariant(p);
 
     const rate = rates[currentCurrency] || 1;
@@ -4255,10 +4255,25 @@ async function loadProductsLiteRest() {
     } catch (e) {}
 }
 
-async function loadProductsFull() {
-    if (productsFull) return productsFull;
-    if (window.__saFullPromise) return window.__saFullPromise;
-    window.__saFullPromise = (async function () {
+async function loadProductsFull(id) {
+    const pid = id || (new URLSearchParams(location.search).get('p'));
+    const list = productsData || [];
+    const i = pid ? list.findIndex(p => String(p.id) === String(pid)) : -1;
+    const cur = i >= 0 ? list[i] : null;
+    if (cur && cur._detail) return cur;
+    if (pid) {
+        try {
+            const res = await fetch('catalog/items/' + encodeURIComponent(pid) + '.json', { cache: 'force-cache' });
+            if (res.ok) {
+                const f = await res.json();
+                const merged = Object.assign({}, cur || {}, f, { _detail: true });
+                if (i >= 0) productsData[i] = merged;
+                else productsData.push(merged);
+                return productsData[i >= 0 ? i : productsData.length - 1];
+            }
+        } catch (e) {}
+    }
+    if (productsFull) return cur || productsFull;
     try {
         const res = await fetch('products.json', { cache: 'force-cache' });
         if (res.ok) {
@@ -4266,9 +4281,9 @@ async function loadProductsFull() {
             if (Array.isArray(data) && data.length) {
                 productsFull = data;
                 const by = new Map(data.map(p => [String(p.id), p]));
-                (productsData || []).forEach((p, i) => {
+                (productsData || []).forEach((p, n) => {
                     const f = by.get(String(p.id));
-                    if (f) productsData[i] = Object.assign(p, {
+                    if (f) productsData[n] = Object.assign(p, {
                         images: f.images || p.images,
                         variants: f.variants || p.variants,
                         desc: f.desc || p.desc,
@@ -4278,9 +4293,7 @@ async function loadProductsFull() {
             }
         }
     } catch (e) {}
-    return productsFull;
-    })();
-    return window.__saFullPromise;
+    return (pid && (productsData || []).find(p => String(p.id) === String(pid))) || productsFull;
 }
 
 let CATALOG_IDX = null;

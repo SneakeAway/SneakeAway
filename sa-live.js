@@ -262,18 +262,15 @@ function deliveryLine(offer, country) {
     }
     if (!p) {
       try {
-        const res = await fetch('products.json', { cache: 'force-cache' });
+        const res = await fetch('catalog/items/' + encodeURIComponent(rawId) + '.json', { cache: 'no-store' });
         if (res.ok) {
-          const all = await res.json();
-          if (Array.isArray(all)) {
-            productsData = all;
-            p = all.find(item => String(item.id) === String(rawId));
-          }
+          p = await res.json();
+          if (p) p._detail = true;
         }
       } catch (e) {}
     }
     if (typeof loadProductsFull === 'function') {
-      try { await loadProductsFull(); } catch (e) {}
+      try { await loadProductsFull(rawId); } catch (e) {}
       p = (productsData || []).find(item => String(item.id) === String(rawId) || Number(item.id) === Number(rawId)) || p;
     }
     if (!p) {
