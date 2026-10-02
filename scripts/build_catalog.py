@@ -284,15 +284,44 @@ def from_oxygen(path, fx, cards):
     return n
 
 
+def slim_offer(off):
+    return {
+        "shop": off.get("shop"),
+        "price": off.get("price"),
+        "wasPrice": off.get("wasPrice"),
+        "url": off.get("url"),
+        "sizes": off.get("sizes") or off.get("sizesInStock") or [],
+        "image": off.get("image") or "",
+    }
+
+
 def lite(card):
-    out = dict(card)
-    out["images"] = card["images"][:2]
-    out["offers"] = []
-    for off in card["offers"]:
-        o = dict(off)
-        o.pop("shippingByCountry", None)
-        out["offers"].append(o)
-    return out
+    # Catalog file: pictures stay, offers shrink to one row per shop.
+    seen = set()
+    offers = []
+    for off in card.get("offers") or []:
+        shop = off.get("shop") or ""
+        if shop in seen:
+            continue
+        seen.add(shop)
+        offers.append(slim_offer(off))
+    return {
+        "id": card.get("id"),
+        "brand": card.get("brand"),
+        "name": card.get("name"),
+        "colorway": card.get("colorway"),
+        "category": card.get("category"),
+        "family": card.get("family"),
+        "mpn": card.get("mpn"),
+        "image": card.get("image"),
+        "images": card.get("images") or [],
+        "colors": card.get("colors") or [],
+        "sizes": card.get("sizes") or [],
+        "offers": offers,
+        "pop": card.get("pop") or 1,
+        "fresh": card.get("fresh") or 1,
+        "style": card.get("style"),
+    }
 
 
 def main():
@@ -315,14 +344,20 @@ def main():
     for i, p in enumerate(products):
         p["pop"] = max(1, len(p["offers"]) * 10 + min(len(p["sizes"]), 12))
     os.makedirs(os.path.join(OUT, "catalog"), exist_ok=True)
-    with open(os.path.join(OUT, "products.json"), "w") as f:
-        json.dump(products, f, ensure_ascii=False, separators=(",", ":"))
+    item_dir = os.path.join(OUT, "catalog", "items")
+    os.makedirs(item_dir, exist_ok=True)
+    light = [lite(p) for p in products]
+    # Full PDP data, one file per product. Not loaded by the catalog.
+    for p in products:
+        with open(os.path.join(item_dir, p["id"] + ".json"), "w") as f:
+            json.dump(p, f, ensure_ascii=False, separators=(",", ":"))
     with open(os.path.join(OUT, "products-lite.json"), "w") as f:
-        json.dump([lite(p) for p in products], f, ensure_ascii=False, separators=(",", ":"))
+        json.dump(light, f, ensure_ascii=False, separators=(",", ":"))
     with open(os.path.join(OUT, "catalog", "first.json"), "w") as f:
-        json.dump(products[:96], f, ensure_ascii=False, separators=(",", ":"))
+        json.dump(light[:96], f, ensure_ascii=False, separators=(",", ":"))
     meta = {
         "count": len(products),
+        "items": "catalog/items",
         "shops": sorted({o["shop"] for p in products for o in p["offers"]}),
         "fx": fx,
     }
