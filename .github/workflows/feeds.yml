@@ -46,15 +46,18 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p feeds/oxygen feeds/jd
-          sudo apt-get update -qq && sudo apt-get install -y -qq lftp
+          sudo apt-get update -qq && sudo apt-get install -y -qq sshpass
           pull_feed() {
             remote="$1"
             dest="$2"
             i=1
-            while [ "$i" -le 5 ]; do
+            while [ "$i" -le 4 ]; do
               rm -f "$dest"
-              if lftp -u "$OXYGEN_USER","$OXYGEN_PASS" -p "${OXYGEN_PORT:-22}" "sftp://$OXYGEN_HOST" -e "set sftp:auto-confirm yes; set net:timeout 40; set xfer:clobber yes; get \"$remote\" -o \"$dest\"; bye"; then
-                if [ -s "$dest" ]; then
+              if sshpass -p "$OXYGEN_PASS" sftp -P "${OXYGEN_PORT:-22}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "$OXYGEN_USER@$OXYGEN_HOST" <<EOF
+get $remote $dest
+EOF
+              then
+                if [ -s "$dest" ] && gzip -t "$dest"; then
                   echo "ok $remote"
                   return 0
                 fi
@@ -66,10 +69,10 @@ jobs:
             echo "failed $remote"
             return 1
           }
-          pull_feed "/45460_4746173_mp.txt.gz" feeds/oxygen/oxygen.txt.gz
+          pull_feed /45460_4746173_mp.txt.gz feeds/oxygen/oxygen.txt.gz
           gzip -dc feeds/oxygen/oxygen.txt.gz > feeds/oxygen/oxygen.txt
           rm -f feeds/oxygen/oxygen.txt.gz
-          pull_feed "/43953_4746173_mp.txt.gz" feeds/jd/jd.txt.gz
+          pull_feed /43953_4746173_mp.txt.gz feeds/jd/jd.txt.gz
 
       - name: Build catalog
         run: python3 scripts/build_catalog.py
