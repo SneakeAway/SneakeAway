@@ -46,19 +46,17 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p feeds/oxygen feeds/jd
-          sudo apt-get update -qq && sudo apt-get install -y -qq sshpass
+          sudo apt-get update -qq && sudo apt-get install -y -qq lftp
           pull_feed() {
             remote="$1"
             dest="$2"
             i=1
             while [ "$i" -le 4 ]; do
               rm -f "$dest"
-              printf 'get %s %s\n' "$remote" "$dest" > /tmp/sftp.batch
-              if sshpass -p "$OXYGEN_PASS" sftp -P "${OXYGEN_PORT:-22}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -b /tmp/sftp.batch "$OXYGEN_USER@$OXYGEN_HOST"; then
-                if [ -s "$dest" ] && gzip -t "$dest"; then
-                  echo "ok $remote"
-                  return 0
-                fi
+              lftp -u "$OXYGEN_USER","$OXYGEN_PASS" -p "${OXYGEN_PORT:-22}" "sftp://$OXYGEN_HOST" -e "set sftp:auto-confirm yes; set net:timeout 40; set xfer:clobber yes; get \"$remote\" -o \"$dest\"; bye" || true
+              if [ -s "$dest" ] && gzip -t "$dest"; then
+                echo "ok $remote"
+                return 0
               fi
               echo "retry $i $remote"
               i=$((i + 1))
