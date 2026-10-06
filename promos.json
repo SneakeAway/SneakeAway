@@ -1,0 +1,32 @@
+[
+  {
+    "shop": "Footshop",
+    "code": "WARMUP10",
+    "label": "The North Face & Columbia — extra 10%",
+    "brands": ["The North Face", "Columbia"],
+    "percent": 10,
+    "from": "2026-10-01",
+    "until": "2026-10-07",
+    "market": "CH"
+  },
+  {
+    "shop": "Footshop",
+    "code": "SNEAKER10",
+    "label": "Nike & Jordan — extra 10%",
+    "brands": ["Nike", "Jordan"],
+    "percent": 10,
+    "from": "2026-09-08",
+    "until": "2026-10-14",
+    "market": "CH"
+  },
+  {
+    "shop": "Footshop",
+    "code": "3STRIPES12",
+    "label": "adidas Originals & Performance — extra 12%",
+    "brands": ["adidas"],
+    "percent": 12,
+    "from": "2026-10-15",
+    "until": "2026-10-21",
+    "market": "CH"
+  }
+]

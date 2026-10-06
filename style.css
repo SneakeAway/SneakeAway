@@ -1701,6 +1701,20 @@ select:focus-visible,
     padding: 24px; max-width: 420px; width: 100%;
 }
 .dest-panel-card h3 { margin: 0 0 14px; font-size: 1.1rem; }
+
+.dest-search {
+    width: 100%; padding: 10px; border-radius: 8px; background: var(--bg);
+    color: var(--text); border: 1px solid var(--border); margin-bottom: 8px;
+}
+.dest-list {
+    max-height: 220px; overflow: auto; border: 1px solid var(--border); border-radius: 8px; background: var(--bg);
+}
+.dest-row {
+    display: block; width: 100%; text-align: left; padding: 10px 12px; border: 0;
+    border-bottom: 1px solid var(--border); background: transparent; color: var(--text); cursor: pointer;
+}
+.dest-row.on { background: rgba(201, 168, 76, 0.16); color: var(--text); font-weight: 700; }
+
 .dest-panel-card select {
     width: 100%; padding: 10px; border-radius: 8px; background: var(--bg);
     color: var(--text); border: 1px solid var(--border); margin-bottom: 12px;

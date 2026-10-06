@@ -2,12 +2,16 @@ name: Feeds
 
 on:
   schedule:
-    # 06:30 Europe/Sofia. GitHub cron is UTC, so 03:30 UTC.
-    - cron: "30 3 * * *"
+    # Every 15 minutes. GitHub cron is UTC. Faster than 5 minutes is not allowed.
+    - cron: "*/15 * * * *"
   workflow_dispatch:
 
+concurrency:
+  group: feeds
+  cancel-in-progress: false
+
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   fetch:
@@ -45,6 +49,8 @@ jobs:
           mkdir -p feeds/oxygen
           sudo apt-get update -qq && sudo apt-get install -y -qq lftp
           lftp -u "$OXYGEN_USER","$OXYGEN_PASS" -p "${OXYGEN_PORT:-22}" "sftp://$OXYGEN_HOST" -e "set sftp:auto-confirm yes; get \"$OXYGEN_PATH\" -o feeds/oxygen/oxygen.txt; bye"
+          mkdir -p feeds/jd
+          lftp -u "$OXYGEN_USER","$OXYGEN_PASS" -p "${OXYGEN_PORT:-22}" "sftp://$OXYGEN_HOST" -e "set sftp:auto-confirm yes; get \"/43953_4746173_mp.txt.gz\" -o feeds/jd/jd.txt.gz; bye"
 
       - name: Build catalog
         run: python3 scripts/build_catalog.py
@@ -70,10 +76,28 @@ jobs:
               --content-type "application/json; charset=utf-8" \
               --cache-control "public, max-age=300"
           }
-          put products.json products.json
-          put products-lite.json products-lite.json
+          python3 - << 'PY'
+          import json, datetime
+          from pathlib import Path
+          path = Path("promos.json")
+          if path.exists():
+              today = datetime.date.today().isoformat()
+              rows = json.loads(path.read_text())
+              kept = [r for r in rows if not r.get("until") or r.get("until") >= today]
+              path.write_text(json.dumps(kept, ensure_ascii=False, indent=2) + "\n")
+              print("promos", len(kept))
+          PY
+          if [ -f products.json ]; then put products.json products.json; fi
+          if [ -f products-lite.json ]; then put products-lite.json products-lite.json; fi
           put catalog/first.json first.json
           put catalog/meta.json meta.json
+          put promos.json promos.json
+          put sitemap.xml sitemap.xml
+          aws s3 sync catalog/pages "s3://${BUCKET}/pages" --endpoint-url "$EP" --content-type "application/json; charset=utf-8" --cache-control "public, max-age=300"
+          aws s3 sync catalog/index "s3://${BUCKET}/index" --endpoint-url "$EP" --content-type "application/json; charset=utf-8" --cache-control "public, max-age=300"
+          aws s3 sync catalog/items "s3://${BUCKET}/items" --endpoint-url "$EP" --content-type "application/json; charset=utf-8" --cache-control "public, max-age=300"
+          aws s3 sync catalog/map "s3://${BUCKET}/map" --endpoint-url "$EP" --content-type "application/json; charset=utf-8" --cache-control "public, max-age=300"
+          aws s3 sync catalog/sitemaps "s3://${BUCKET}/sitemaps" --endpoint-url "$EP" --content-type "application/xml; charset=utf-8" --cache-control "public, max-age=300"
 
       - name: Upload catalog artifact
         uses: actions/upload-artifact@v4
@@ -86,14 +110,3 @@ jobs:
             catalog/meta.json
           retention-days: 5
 
-      - name: Commit light catalog
-        run: |
-          git config user.name "sneakeaway-feeds"
-          git config user.email "feeds@users.noreply.github.com"
-          git add products-lite.json catalog/first.json catalog/meta.json catalog/items
-          if git diff --cached --quiet; then
-            echo "No catalog changes"
-            exit 0
-          fi
-          git commit -m "Update light catalog"
-          git push

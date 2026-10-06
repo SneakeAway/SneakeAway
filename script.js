@@ -1,3 +1,27 @@
+const SA_CATALOG_BASE = 'https://pub-e3aa92af71b44f72a7b16c1f4c69783a.r2.dev';
+function saCatalogRemote(path) {
+    const rel = String(path || '').replace(/^\//, '');
+    if (rel === 'catalog/first.json') return SA_CATALOG_BASE + '/first.json';
+    if (rel === 'catalog/meta.json') return SA_CATALOG_BASE + '/meta.json';
+    if (rel === 'promos.json') return SA_CATALOG_BASE + '/promos.json';
+    if (rel === 'products.json' || rel === 'products-lite.json') return SA_CATALOG_BASE + '/' + rel;
+    if (rel.indexOf('catalog/pages/') === 0) return SA_CATALOG_BASE + '/pages/' + rel.slice('catalog/pages/'.length);
+    if (rel.indexOf('catalog/index/') === 0) return SA_CATALOG_BASE + '/index/' + rel.slice('catalog/index/'.length);
+    if (rel.indexOf('catalog/items/') === 0) return SA_CATALOG_BASE + '/items/' + rel.slice('catalog/items/'.length);
+    return '';
+}
+async function saCatalogFetch(path, opts) {
+    const remote = saCatalogRemote(path);
+    if (remote) {
+        try {
+            const res = await fetch(remote, Object.assign({ cache: 'default', mode: 'cors' }, opts || {}));
+            if (res && res.ok) return res;
+        } catch (e) {}
+    }
+    return fetch(path, opts || { cache: 'force-cache' });
+}
+window.saCatalogFetch = saCatalogFetch;
+
 // =============================================
 // script.js - ПЪЛЕН С WISHLIST И LOAD MORE
 // =============================================
@@ -741,20 +765,24 @@ let selectedSizes = [];       // EU sizes (numbers)
 let sizeChipSystem = 'eu';
 
 const HIDE_EU_ON_OTHER = { '37':1, '39.5':1, '41.5':1, '46.5':1 };
-function cleanEuSizes(sizes) {
-    const raw = (sizes || []).map(s => String(s));
-    const nums = raw.map(Number).filter(n => !isNaN(n));
-    const adult = nums.some(n => n >= 36 && n <= 50);
-    const sys = (typeof sizeChipSystem !== 'undefined' && sizeChipSystem) ? sizeChipSystem : 'eu';
-    return raw.filter(s => {
+
+function euSizeList(sizes) {
+    const map = (typeof sizeMapping !== 'undefined') ? sizeMapping : [];
+    const seen = new Set();
+    const out = [];
+    (sizes || []).forEach(s => {
         const n = Number(s);
-        if (adult) {
-            if (!isNaN(n) && n >= 1 && n <= 13.9) return false;
-            if (!isNaN(n) && n > 48) return false;
-        }
-        if (sys !== 'eu' && HIDE_EU_ON_OTHER[String(s)]) return false;
-        return true;
+        if (isNaN(n)) return;
+        let row = map.find(r => Number(r.eu) === n);
+        if (!row && n < 16) row = map.find(r => Number(r.uk) === n || Number(r.us) === n);
+        if (!row && n >= 20 && n <= 34) row = map.find(r => Number(r.cm) === n);
+        if (!row) return;
+        const eu = row.eu;
+        if (seen.has(eu)) return;
+        seen.add(eu);
+        out.push(eu);
     });
+    return out.sort((a, b) => a - b);
 }
 function labelSize(eu) {
     const sys = (typeof sizeChipSystem !== 'undefined' && sizeChipSystem) ? sizeChipSystem : 'eu';
@@ -797,6 +825,19 @@ function setSizeChipSystem(k, reload) {
         if (typeof sizeIsOn === 'function') b.classList.toggle('on', sizeIsOn(b.getAttribute('data-size')));
     });
     try { if (typeof renderSizeChipLive === 'function') renderSizeChipLive(); } catch (e) {}
+    try { if (typeof updateSizeGrid === 'function') updateSizeGrid(k); } catch (e) {}
+    try {
+        const list = document.getElementById('size-chip-list');
+        if (list && typeof sizeMapping !== 'undefined') {
+            list.querySelectorAll('[data-eu]').forEach(b => {
+                const row = sizeMapping.find(r => String(r.eu) === b.getAttribute('data-eu'));
+                if (row && row[k] != null) b.textContent = row[k];
+            });
+            document.querySelectorAll('#size-chip-panel [data-sys]').forEach(b => {
+                b.classList.toggle('on', b.getAttribute('data-sys') === k);
+            });
+        }
+    } catch (e) {}
     try {
         if (document.body.classList.contains('product-view') && typeof initProductPage === 'function') initProductPage();
     } catch (e) {}
@@ -1656,7 +1697,7 @@ function offersForSameColor(p) {
 }
 function rankedOffers(p, checkCountry) {
     const country = (shipMode === "tome" && currentCountry) ? currentCountry : (checkCountry || null);
-    const src = (typeof offersForSameColor === 'function') ? offersForSameColor(p) : (p.offers || []);
+    const src = offersForCard(p);
     let list = [...src].map(o => {
         const ships = country ? offerShipsTo(o, country) : null;
         const total = offerTotalEUR(o, country);
@@ -1701,6 +1742,14 @@ function productGallery(p) {
     list.forEach(u => { if (!seen.has(u)) { seen.add(u); out.push(u); } });
     return out;
 }
+
+function lookCardName(p) {
+    let s = String((p && p.name) || '').trim();
+    const slash = s.indexOf('/');
+    if (slash > 0) s = s.slice(0, slash).trim();
+    s = s.replace(/\s+[–-]\s+.*$/, '').trim();
+    return s || (p && p.name) || '';
+}
 function pickLookImage(p, slot) {
     const gallery = productGallery(p).filter(u => !isSoleishUrl(u));
     const all = gallery.length ? gallery : productGallery(p);
@@ -1728,6 +1777,37 @@ function genderKey(p) {
     if (/kid|child|junior|youth|infant|toddler/.test(c)) return 'kids';
     if (/men|mens|homme|uomo|herren/.test(c)) return 'men';
     return c || 'unisex';
+}
+
+function styleCodeFrom(text) {
+    const m = String(text || '').match(/[a-z]{1,3}\d{4,5}-\d{2,3}/i);
+    return m ? m[0].toLowerCase() : '';
+}
+function productStyleCode(p) {
+    if (!p) return '';
+    const direct = styleCodeFrom(p.mpn) || styleCodeFrom(p.id) || styleCodeFrom(p.name);
+    if (direct) return direct;
+    const o = (p.offers || [])[0] || {};
+    return styleCodeFrom(o.mpn) || styleCodeFrom(o.url) || '';
+}
+function offerStyleCode(o) {
+    if (!o) return '';
+    return styleCodeFrom(o.mpn) || styleCodeFrom(o.url) || styleCodeFrom(o.color) || '';
+}
+function offersForCard(p) {
+    const code = productStyleCode(p);
+    const src = (p && p.offers) || [];
+    const byShop = new Map();
+    src.forEach(o => {
+        const oc = offerStyleCode(o);
+        if (code && oc && oc !== code) return;
+        const shop = String(o.shop || '').trim();
+        if (!shop) return;
+        const prev = byShop.get(shop);
+        const price = Number(o.price) || 0;
+        if (!prev || price < (Number(prev.price) || 0)) byShop.set(shop, o);
+    });
+    return byShop.size ? [...byShop.values()] : src;
 }
 function catalogModelKey(p) {
     const filler = { trainer:1, trainers:1, sneaker:1, sneakers:1, shoe:1, shoes:1, boot:1, boots:1, mens:1, men:1, womens:1, women:1, kids:1, kid:1, the:1, and:1, og:1, new:1, wntr:1, winter:1, mid:1, low:1, hi:1, high:1, retro:1, sma:1, spw:1 };
@@ -1787,7 +1867,8 @@ function splitCatalogByColorway(list) {
             const g = inferOfferGender(p, o);
             const colRaw = stripColorSku(o.color || '');
             const ck = colorKey(colRaw) || 'default';
-            const key = g + '::' + catalogModelKey(p) + '::' + ck;
+            const code = offerStyleCode(o) || productStyleCode(p);
+            const key = g + '::' + catalogModelKey(p) + '::' + ck + '::' + code;
             let t = buckets.get(key);
             if (!t) {
                 t = {
@@ -1798,14 +1879,20 @@ function splitCatalogByColorway(list) {
                     offers: [],
                     variants: [],
                     images: p.image ? [p.image] : [],
-                    _seen: new Set()
+                    _seen: new Map()
                 };
                 buckets.set(key, t);
             }
-            const sig = [o.shop, ck, Math.round(Number(o.price) * 100)].join('|');
-            if (!t._seen.has(sig)) {
-                t._seen.add(sig);
+            const sig = String(o.shop || '');
+            const prev = t._seen.get(sig);
+            const price = Number(o.price) || 0;
+            if (!prev) {
+                t._seen.set(sig, o);
                 t.offers.push(o);
+            } else if (price < (Number(prev.price) || 0)) {
+                const i = t.offers.indexOf(prev);
+                if (i >= 0) t.offers[i] = o;
+                t._seen.set(sig, o);
             }
             (o.sizesInStock || o.sizes || []).forEach(s => { if (!t.sizes.includes(s)) t.sizes.push(s); });
         });
@@ -2163,7 +2250,7 @@ function renderProducts(reset = true) {
                       <div class="look-top">
                         <div class="look-top-text">
                           <span class="look-brand">${p.brand || ''}</span>
-                          <strong class="look-name">${p.name}</strong>
+                          <strong class="look-name">${lookCardName(p)}</strong>
                         </div>
                         <button type="button" class="look-open" onclick="event.stopPropagation(); openProduct(${jsId(p.id)})">${dict.view || 'View'}</button>
                       </div>
@@ -2773,7 +2860,7 @@ async function initProductPage() {
     const inWl = (wishlist || []).some(w => String(w.id) === String(p.id));
     const sizes = p.sizes || [];
     const colorHTML = colorSwatchesHTML(p, dict);
-    const sizeHTML = sizes.length ? `<div class="p-opts"><span class="p-opts-label">${dict.opt_size || 'Size'}</span> <button type="button" class="size-guide-link" onclick="openSizeGuide()">${dict.size_guide || 'Size chart'}</button>${sizeSysTabsHTML('pdp')}<div class="p-chips">${cleanEuSizes(sizes).map(s=>`<button type="button" class="p-chip${String(selectedProductSize)===String(s)?' on':''}" data-size="${s}">${labelSize(s)}</button>`).join('')}</div></div>` : '';
+    const sizeHTML = sizes.length ? `<div class="p-opts"><span class="p-opts-label">${dict.opt_size || 'Size'}</span> <button type="button" class="size-guide-link" onclick="openSizeGuide()">${dict.size_guide || 'Size chart'}</button>${sizeSysTabsHTML('pdp')}<div class="p-chips">${euSizeList(sizes).map(s=>`<button type="button" class="p-chip${String(selectedProductSize)===String(s)?' on':''}" data-size="${s}">${labelSize(s)}</button>`).join('')}</div></div>` : '';
     const restockHTML = `<label class="restock-row"><input type="checkbox" id="restock-flag"> ${dict.restock_alert || tExtra('restock_alert')}</label>`;
     const descTxt = productDescText(p);
     const descHTML = descTxt ? `<div class="product-desc"><h2>${dict.h_desc || ''}</h2><p>${escapeHtml(descTxt)}</p></div>` : '';
@@ -2860,7 +2947,7 @@ function showQuickView(id) {
     closeQuickView();
     const p = (productsData || []).find(item => String(item.id) === String(id));
     if (!p) return;
-    if (!(p.images && p.images.length > 2)) { loadProductsFull(id).then(() => { const q=document.getElementById('quickview-modal'); if(q && q.getAttribute('data-pid')==String(id)) showQuickView(id); }); }
+    if (!(p.images && p.images.length > 2) && !p._qvGalleryAsked) { p._qvGalleryAsked = true; loadProductsFull(id).then(() => { const q=document.getElementById('quickview-modal'); if(q && q.getAttribute('data-pid')==String(id)) { const img=q.querySelector('#qv-main-img'); const fresh=(productsData||[]).find(item => String(item.id)===String(id)); if (img && fresh && fresh.image) img.src = fresh.image; } }); }
     applyProductVariant(p);
 
     const rate = rates[currentCurrency] || 1;
@@ -2885,7 +2972,7 @@ function showQuickView(id) {
 
     const modalHTML = `
         <div id="quickview-modal" class="qv-sheet-wrap" data-pid="${p.id}" onclick="if(event.target.id==='quickview-modal')closeQuickView()" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.55); display:flex; align-items:flex-end; justify-content:center; z-index:3000; padding:0;">
-            <div class="qv-sheet" onclick="event.stopPropagation()" style="background:var(--card); max-width:720px; width:100%; border-radius:18px 18px 0 0; overflow:hidden; position:relative; max-height:92vh; overflow-y:auto;">
+            <div class="qv-sheet" onclick="event.stopPropagation()" style="background:var(--card); max-width:720px; width:100%; border-radius:18px 18px 0 0; position:relative; max-height:92vh; overflow-y:auto; overflow-x:hidden;">
                 
                 <button type="button" class="qv-x" onclick="closeQuickView()" aria-label="Close">×</button>
 
@@ -2903,7 +2990,7 @@ function showQuickView(id) {
                         <button type="button" class="heart-btn heart-btn-lg qv-heart${inWishlist ? ' active' : ''}" onclick="openWishlistSelector(${jsId(p.id)}, event)"><i class="${inWishlist ? 'fa-solid' : 'fa-regular'} fa-heart"></i></button>
                     </div>
                     ${uniqueVariants(p).length ? `<div class="qv-opts"><span>${dict.opt_color || dict.color || 'Colour'}</span><div class="p-color-swatches">${uniqueVariants(p).map(v => { const card=(v.id!=null&&findProductById(v.id))||p; const st=colorwayFitsFilters(card)?'':' strike'; return `<button type="button" class="p-swatch${selectedProductColor===v.key?' on':''}${st}" onclick="selectedProductColor='${String(v.key).replace(/'/g, "\'")}'; showQuickView(${jsId(p.id)})"><span class="p-swatch-pic"><img src="${v.image || p.image}" alt=""></span><span>${v.label}</span></button>`; }).join('')}</div></div>` : ''}
-                    ${(p.sizes && p.sizes.length) ? `<div class="qv-opts"><span>${dict.opt_size || dict.size_eu || 'Size'}</span>${sizeSysTabsHTML('qv')}<div class="p-chips">${cleanEuSizes(p.sizes).map(s => `<button type="button" class="p-chip${sizeIsOn(s)?' on':''}" data-size="${s}" onclick="toggleCatalogSize('${String(s)}', function(){ refreshQvQuiet(${jsId(p.id)}); })">${labelSize(s)}</button>`).join('')}</div></div>` : ''}
+                    ${(p.sizes && p.sizes.length) ? `<div class="qv-opts"><span>${dict.opt_size || dict.size_eu || 'Size'}</span>${sizeSysTabsHTML('qv')}<div class="p-chips">${euSizeList(p.sizes).map(s => `<button type="button" class="p-chip${sizeIsOn(s)?' on':''}" data-size="${s}" onclick="toggleCatalogSize('${String(s)}', function(){ refreshQvQuiet(${jsId(p.id)}); })">${labelSize(s)}</button>`).join('')}</div></div>` : ''}
 
                     <p class="price-gold-hero offer-shop-price" style="margin:18px 0 6px 0;">
                         ${wasHTML}<a href="${shopHref(bestOffer)}" class="offer-price-link offer-shop-price" target="_blank" rel="noopener sponsored noreferrer">${symbol}${Math.round((bestOffer.price||0)*rate)}</a>
@@ -3373,17 +3460,13 @@ function goToPage(n) {
     // Manual clear and one page
     const symbol = symbols[currentCurrency] || '€';
     container.innerHTML = '';
-    const hasFilters = selectedSizes.length || selectedColors.length || selectedMaterials.length || selectedPriceRanges.length || (searchTerm && searchTerm.trim()) || maxPriceSlider < 1500 || selectedCategory;
-    container.insertAdjacentHTML('beforeend', `
-        <div id="products-meta" style="grid-column:1/-1; display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:10px;">
-            <span style="font-size:0.85rem; color:var(--gray-text);">
-                ${dict.showing} <strong id="shown-count" style="color:var(--text);">0</strong> ${dict.of} <strong style="color:var(--text);">${filtered.length}</strong> ${dict.products}
-            </span>
-            ${hasFilters ? `<button onclick="clearAllFilters()" style="background:transparent; border:1px solid var(--border); color:var(--text); padding:6px 14px; border-radius:20px; font-size:0.8rem; cursor:pointer;">${dict.clear_filters}</button>` : ''}
-        </div>
-    `);
-    // render one page worth starting at offset
+    const meta = document.getElementById('products-meta');
+    if (meta) {
+        const shown = meta.querySelector('#shown-count');
+        if (shown) shown.textContent = '0';
+    }
     renderProducts(false);
+
     // After append, displayedCount is pageStart + batch. Good.
     window.scrollTo({ top: (document.querySelector('.products-wrapper')?.offsetTop || 0) - 80, behavior: 'smooth' });
 }
@@ -4065,7 +4148,7 @@ function clearAllFilters() {
     ['hero-search-input', 'mobile-search-input', 'header-search-input'].forEach(id => {
         const el = document.getElementById(id); if (el) el.value = '';
     });
-    updateSizeGrid('eu');
+    updateSizeGrid(sizeChipSystem || 'eu');
     try { fillExtraFilters(); } catch (e) {}
     scheduleCatalogRender();
     syncFiltersToURL();
@@ -4227,6 +4310,40 @@ function updateActiveFiltersBadge() {
 
 let productsFull = null;
 
+let saCatalogPage = 1;
+let saCatalogPages = 0;
+let saCatalogLoading = false;
+function bindCatalogScroll() {
+    if (window.__saPageScroll) return;
+    window.__saPageScroll = true;
+    window.addEventListener('scroll', function () {
+        if (window.__saRestLoaded) return;
+        if (document.body && document.body.classList.contains('product-view')) return;
+        const left = document.documentElement.scrollHeight - window.scrollY - window.innerHeight;
+        if (left < 900) loadNextCatalogPage();
+    }, { passive: true });
+}
+async function loadNextCatalogPage() {
+    if (window.__saRestLoaded || saCatalogLoading) return;
+    if (saCatalogPages && saCatalogPage >= saCatalogPages) return;
+    saCatalogLoading = true;
+    const next = saCatalogPage + 1;
+    try {
+        const res = await saCatalogFetch('catalog/pages/page-' + next + '.json', { cache: 'default' });
+        if (!res.ok) { saCatalogPages = saCatalogPage; return; }
+        const more = await res.json();
+        if (!Array.isArray(more) || !more.length) { saCatalogPages = saCatalogPage; return; }
+        const have = new Set((productsData || []).map(p => String(p.id)));
+        const add = more.filter(p => !have.has(String(p.id)));
+        if (add.length) productsData = (productsData || []).concat(add);
+        saCatalogPage = next;
+        _filtCacheKey = '';
+        _filtCacheList = null;
+        try { buildCatalogIndex(); } catch (e) {}
+        if (!(document.body && document.body.classList.contains('product-view')) && typeof renderProducts === 'function') renderProducts(false);
+    } catch (e) {}
+    finally { saCatalogLoading = false; }
+}
 async function loadProductsLiteRest() {
     if (window.__saRestLoaded) return;
     try {
@@ -4399,6 +4516,7 @@ async function loadProducts() {
     try { fillExtraFilters(); fillColorFilters(); fillStyleFilters(); } catch (e) {}
     window.__saProductsReady = true;
     window.__saRestLoaded = false;
+    bindCatalogScroll();
     setTimeout(function () { loadProductsLiteRest(); }, 400);
     window.__saKickFullGallery = function () {
         if (window.__saFullKick) return;
@@ -4669,7 +4787,7 @@ window.onload = async () => {
     try { loadFiltersFromURL(); } catch (e) { console.error('loadFiltersFromURL', e); }
     try { scheduleCatalogRender(); } catch (e) { console.error('render after load', e); }
     try { updateUI(); } catch (e) { console.error('updateUI', e); }
-    try { updateSizeGrid('eu'); } catch (e) { console.error('updateSizeGrid', e); }
+    try { updateSizeGrid(sizeChipSystem || 'eu'); } catch (e) { console.error('updateSizeGrid', e); }
     try { setupLoadMore(); } catch (e) { console.error('setupLoadMore', e); }
     try { setupFilters(); } catch (e) { console.error('setupFilters', e); }
     try { initHeroSlider(); } catch (e) { console.error('initHeroSlider', e); }
@@ -4756,12 +4874,13 @@ function openDestPanel() {
     const existing = document.getElementById('dest-panel');
     if (existing) existing.remove();
     const dict = langs[currentLang] || langs.en;
-    const opts = DEST_COUNTRIES.map(c => `<option value="${c.code}" ${currentCountry===c.code?'selected':''}>${c.code} — ${c.name}</option>`).join('');
+    const opts = DEST_COUNTRIES.map(c => `<button type="button" class="dest-row${currentCountry===c.code?' on':''}" data-code="${c.code}">${c.code} — ${c.name}</button>`).join('');
     document.body.insertAdjacentHTML('beforeend', `
       <div id="dest-panel" class="dest-panel" role="dialog" aria-modal="true">
         <div class="dest-panel-card">
           <h3>${dict.dest_choose}</h3>
-          <select id="dest-panel-select">${opts}</select>
+          <input id="dest-panel-search" class="dest-search" type="search" placeholder="Search" autocomplete="off">
+          <div id="dest-panel-list" class="dest-list">${opts}</div>
           <p class="dest-stars">${dict.dest_note_ww}</p>
           <p class="dest-stars">${dict.dest_note_tome}</p>
           <div class="dest-panel-actions">
@@ -4771,11 +4890,30 @@ function openDestPanel() {
         </div>
       </div>`);
     a11yOpenModal(document.getElementById('dest-panel'));
+    const search = document.getElementById('dest-panel-search');
+    if (search) search.focus();
 }
+function pickDestRow(code) {
+    document.querySelectorAll('#dest-panel-list .dest-row').forEach(b => {
+        b.classList.toggle('on', b.getAttribute('data-code') === code);
+    });
+}
+document.addEventListener('click', function (e) {
+    const row = e.target.closest && e.target.closest('#dest-panel-list .dest-row');
+    if (!row) return;
+    pickDestRow(row.getAttribute('data-code'));
+});
+document.addEventListener('input', function (e) {
+    if (!e.target || e.target.id !== 'dest-panel-search') return;
+    const q = e.target.value.trim().toLowerCase();
+    document.querySelectorAll('#dest-panel-list .dest-row').forEach(b => {
+        b.style.display = b.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+});
 
 function applyDestFromPanel() {
-    const sel = document.getElementById('dest-panel-select');
-    currentCountry = sel && sel.value ? sel.value : currentCountry;
+    const sel = document.querySelector('#dest-panel-list .dest-row.on');
+    currentCountry = sel ? sel.getAttribute('data-code') : currentCountry;
     shipMode = currentCountry ? 'tome' : 'ww';
     saveShipPrefs();
     try { localStorage.setItem('sa_dest_seen','1'); } catch(e) {}
