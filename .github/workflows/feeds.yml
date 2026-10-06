@@ -37,20 +37,37 @@ jobs:
           pull 321395 "iQueens_fr-iQueensFR_google_all-shopping"
           pull 321395 "Footshop_ch-FootshopCH_google_all-shopping"
 
-      - name: Download Oxygen feed
+      - name: Download Oxygen and JD
         env:
           OXYGEN_HOST: ${{ secrets.OXYGEN_HOST }}
           OXYGEN_PORT: ${{ secrets.OXYGEN_PORT }}
           OXYGEN_USER: ${{ secrets.OXYGEN_USER }}
           OXYGEN_PASS: ${{ secrets.OXYGEN_PASS }}
-          OXYGEN_PATH: ${{ secrets.OXYGEN_PATH }}
         run: |
           set -euo pipefail
-          mkdir -p feeds/oxygen
+          mkdir -p feeds/oxygen feeds/jd
           sudo apt-get update -qq && sudo apt-get install -y -qq lftp
-          lftp -u "$OXYGEN_USER","$OXYGEN_PASS" -p "${OXYGEN_PORT:-22}" "sftp://$OXYGEN_HOST" -e "set sftp:auto-confirm yes; get \"$OXYGEN_PATH\" -o feeds/oxygen/oxygen.txt; bye"
-          mkdir -p feeds/jd
-          lftp -u "$OXYGEN_USER","$OXYGEN_PASS" -p "${OXYGEN_PORT:-22}" "sftp://$OXYGEN_HOST" -e "set sftp:auto-confirm yes; get \"/43953_4746173_mp.txt.gz\" -o feeds/jd/jd.txt.gz; bye"
+          pull_feed() {
+            remote="$1"
+            dest="$2"
+            i=1
+            while [ "$i" -le 5 ]; do
+              rm -f "$dest"
+              if lftp -u "$OXYGEN_USER","$OXYGEN_PASS" -p "${OXYGEN_PORT:-22}" "sftp://$OXYGEN_HOST" -e "set sftp:auto-confirm yes; set net:timeout 40; set xfer:clobber yes; get \"$remote\" -o \"$dest\"; bye"; then
+                if [ -s "$dest" ]; then
+                  echo "ok $remote"
+                  return 0
+                fi
+              fi
+              echo "retry $i $remote"
+              i=$((i + 1))
+              sleep 8
+            done
+            echo "failed $remote"
+            return 1
+          }
+          pull_feed "/45460_4746173_mp.txt" feeds/oxygen/oxygen.txt
+          pull_feed "/43953_4746173_mp.txt.gz" feeds/jd/jd.txt.gz
 
       - name: Build catalog
         run: python3 scripts/build_catalog.py
