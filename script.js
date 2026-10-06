@@ -1743,12 +1743,25 @@ function productGallery(p) {
     return out;
 }
 
-function lookCardName(p) {
+function shortModelName(p) {
     let s = String((p && p.name) || '').trim();
-    const slash = s.indexOf('/');
-    if (slash > 0) s = s.slice(0, slash).trim();
-    s = s.replace(/\s+[–-]\s+.*$/, '').trim();
-    return s || (p && p.name) || '';
+    s = s.replace(/^(sneakers|baskets|trainers|shoes)\s+/i, '');
+    s = s.replace(/\b(EUR|UK|US|CM)\s*\d+(?:[.,]\d+)?\b/gi, '');
+    s = s.replace(/\b\d{2}(?:[.,]\d)?\b/g, '');
+    const color = String((p && (p.colorway || (p.colors && p.colors[0]))) || '').split(/[\/|,]/)[0].trim();
+    if (color) s = s.replace(new RegExp('\\b' + color.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'ig'), '');
+    s = s.replace(/\b(black|white|grey|gray|blue|red|green|beige|brown|navy|pink|purple|orange|yellow)\b/ig, '');
+    s = s.replace(/\s+/g, ' ').replace(/\s*[·|/,-]\s*$/, '').trim();
+    return s || String((p && p.name) || '').trim();
+}
+function lookCardName(p) {
+    return shortModelName(p);
+}
+function listCardName(p) {
+    const model = shortModelName(p);
+    const color = String((p && (p.colorway || (p.colors && p.colors[0]))) || '').split(/[\/|,]/)[0].trim();
+    if (!color || model.toLowerCase().indexOf(color.toLowerCase()) >= 0) return model;
+    return model + ' · ' + color;
 }
 function pickLookImage(p, slot) {
     const gallery = productGallery(p).filter(u => !isSoleishUrl(u));
@@ -2250,14 +2263,14 @@ function renderProducts(reset = true) {
                       <div class="look-top">
                         <div class="look-top-text">
                           <span class="look-brand">${p.brand || ''}</span>
-                          <strong class="look-name">${lookCardName(p)}</strong>
+                          <strong class="look-name">${escapeHtml(lookCardName(p))}</strong>
                         </div>
                         <button type="button" class="look-open" onclick="event.stopPropagation(); openProduct(${jsId(p.id)})">${dict.view || 'View'}</button>
                       </div>
                       <span class="look-from look-price-tag">${(range.min && range.max && range.min !== range.max) ? `${symbol}${range.min}–${symbol}${range.max}` : `${symbol}${range.min || bestTotal}`}</span>
                     </div>
                 </div>
-                <h3 class="shoe-name"><a class="shoe-link" href="${catalogFile()}?p=${encodeURIComponent(p.id)}" onclick="event.preventDefault(); openProduct(${jsId(p.id)})">${p.name}${p.colorway && String(p.name).toLowerCase().indexOf(String(p.colorway).toLowerCase()) < 0 ? ' · ' + p.colorway : ''}</a></h3>
+                <h3 class="shoe-name"><a class="shoe-link" href="${catalogFile()}?p=${encodeURIComponent(p.id)}" onclick="event.preventDefault(); openProduct(${jsId(p.id)})">${escapeHtml(listCardName(p))}</a></h3>
                 <p class="card-shops">${[...new Set((p.offers||[]).map(o => o.shop).filter(Boolean))].join(' · ') || ''}</p>
                 ${p.colors && p.colors[0] ? `<p class="card-colors">${p.colors[0]}</p>` : ''}
                 ${cardColorDotsHTML(p)}
@@ -4874,13 +4887,12 @@ function openDestPanel() {
     const existing = document.getElementById('dest-panel');
     if (existing) existing.remove();
     const dict = langs[currentLang] || langs.en;
-    const opts = DEST_COUNTRIES.map(c => `<button type="button" class="dest-row${currentCountry===c.code?' on':''}" data-code="${c.code}">${c.code} — ${c.name}</button>`).join('');
+    const opts = DEST_COUNTRIES.map(c => `<option value="${c.code}" ${currentCountry===c.code?'selected':''}>${c.code} — ${c.name}</option>`).join('');
     document.body.insertAdjacentHTML('beforeend', `
       <div id="dest-panel" class="dest-panel" role="dialog" aria-modal="true">
         <div class="dest-panel-card">
           <h3>${dict.dest_choose}</h3>
-          <input id="dest-panel-search" class="dest-search" type="search" placeholder="Search" autocomplete="off">
-          <div id="dest-panel-list" class="dest-list">${opts}</div>
+          <select id="dest-panel-select">${opts}</select>
           <p class="dest-stars">${dict.dest_note_ww}</p>
           <p class="dest-stars">${dict.dest_note_tome}</p>
           <div class="dest-panel-actions">
@@ -4890,30 +4902,11 @@ function openDestPanel() {
         </div>
       </div>`);
     a11yOpenModal(document.getElementById('dest-panel'));
-    const search = document.getElementById('dest-panel-search');
-    if (search) search.focus();
 }
-function pickDestRow(code) {
-    document.querySelectorAll('#dest-panel-list .dest-row').forEach(b => {
-        b.classList.toggle('on', b.getAttribute('data-code') === code);
-    });
-}
-document.addEventListener('click', function (e) {
-    const row = e.target.closest && e.target.closest('#dest-panel-list .dest-row');
-    if (!row) return;
-    pickDestRow(row.getAttribute('data-code'));
-});
-document.addEventListener('input', function (e) {
-    if (!e.target || e.target.id !== 'dest-panel-search') return;
-    const q = e.target.value.trim().toLowerCase();
-    document.querySelectorAll('#dest-panel-list .dest-row').forEach(b => {
-        b.style.display = b.textContent.toLowerCase().includes(q) ? '' : 'none';
-    });
-});
 
 function applyDestFromPanel() {
-    const sel = document.querySelector('#dest-panel-list .dest-row.on');
-    currentCountry = sel ? sel.getAttribute('data-code') : currentCountry;
+    const sel = document.getElementById('dest-panel-select');
+    currentCountry = sel && sel.value ? sel.value : currentCountry;
     shipMode = currentCountry ? 'tome' : 'ww';
     saveShipPrefs();
     try { localStorage.setItem('sa_dest_seen','1'); } catch(e) {}
