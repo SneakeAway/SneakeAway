@@ -2,8 +2,8 @@ name: Feeds
 
 on:
   schedule:
-    # Every 15 minutes. GitHub cron is UTC. Faster than 5 minutes is not allowed.
-    - cron: "*/15 * * * *"
+    # Four times a day. A full run can take over an hour, so 15 minutes only cancels itself.
+    - cron: "17 */6 * * *"
   workflow_dispatch:
 
 concurrency:
@@ -46,29 +46,60 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p feeds/oxygen feeds/jd
-          sudo apt-get update -qq && sudo apt-get install -y -qq lftp
-          pull_feed() {
-            remote="$1"
-            dest="$2"
-            i=1
-            while [ "$i" -le 4 ]; do
-              rm -f "$dest"
-              lftp -u "$OXYGEN_USER","$OXYGEN_PASS" -p "${OXYGEN_PORT:-22}" "sftp://$OXYGEN_HOST" -e "set sftp:auto-confirm yes; set net:timeout 40; set xfer:clobber yes; get \"$remote\" -o \"$dest\"; bye" || true
-              if [ -s "$dest" ] && gzip -t "$dest"; then
-                echo "ok $remote"
-                return 0
-              fi
-              echo "retry $i $remote"
-              i=$((i + 1))
-              sleep 8
-            done
-            echo "failed $remote"
-            return 1
-          }
-          pull_feed /45460_4746173_mp.txt.gz feeds/oxygen/oxygen.txt.gz
-          gzip -dc feeds/oxygen/oxygen.txt.gz > feeds/oxygen/oxygen.txt
-          rm -f feeds/oxygen/oxygen.txt.gz
-          pull_feed /43953_4746173_mp.txt.gz feeds/jd/jd.txt.gz
+          python3 -m pip install --user paramiko
+          python3 - << 'PY'
+          import gzip, os, sys, time
+          import paramiko
+          host = os.environ["OXYGEN_HOST"]
+          port = int(os.environ.get("OXYGEN_PORT") or "22")
+          user = os.environ["OXYGEN_USER"]
+          password = os.environ["OXYGEN_PASS"]
+          jobs = [
+              ("/45460_4746173_mp.txt.gz", "feeds/oxygen/oxygen.txt.gz", "feeds/oxygen/oxygen.txt"),
+              ("/43953_4746173_mp.txt.gz", "feeds/jd/jd.txt.gz", None),
+          ]
+          def pull(remote, dest):
+              last = "no attempt"
+              for n in range(1, 5):
+                  try:
+                      if os.path.exists(dest):
+                          os.remove(dest)
+                      transport = paramiko.Transport((host, port))
+                      transport.connect(username=user, password=password)
+                      sftp = paramiko.SFTPClient.from_transport(transport)
+                      with sftp.open(remote, "rb") as src, open(dest, "wb") as out:
+                          while True:
+                              chunk = src.read(1024 * 1024)
+                              if not chunk:
+                                  break
+                              out.write(chunk)
+                      sftp.close()
+                      transport.close()
+                      with gzip.open(dest, "rb") as fh:
+                          fh.read(64)
+                      print(f"ok {remote} {os.path.getsize(dest)} bytes", flush=True)
+                      return True
+                  except Exception as exc:
+                      last = f"{type(exc).__name__}: {exc}"
+                      print(f"retry {n} {remote}: {last}", flush=True)
+                      time.sleep(8)
+              print(f"failed {remote}: {last}", flush=True)
+              return False
+          ok = True
+          for remote, dest, plain in jobs:
+              if not pull(remote, dest):
+                  ok = False
+                  continue
+              if plain:
+                  with gzip.open(dest, "rb") as src, open(plain, "wb") as out:
+                      while True:
+                          chunk = src.read(1024 * 1024)
+                          if not chunk:
+                              break
+                          out.write(chunk)
+                  os.remove(dest)
+          sys.exit(0 if ok else 1)
+          PY
 
       - name: Build catalog
         run: python3 scripts/build_catalog.py
