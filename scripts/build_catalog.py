@@ -504,6 +504,33 @@ def from_jd(path, fx, cards):
     return n
 
 
+
+def popularity(card):
+    blob = ((card.get("brand") or "") + " " + (card.get("name") or "")).lower()
+    models = (
+        ("samba", 100), ("campus", 96), ("gazelle", 94), ("spezial", 90),
+        ("handball", 88), ("forum", 84), ("superstar", 80), ("stan smith", 76),
+        ("dunk", 98), ("air force", 97), ("jordan 1", 95), ("air jordan 1", 95),
+        ("cortez", 70), ("blazer", 72), ("vomero", 68), ("pegasus", 66),
+        ("9060", 93), ("550", 91), ("530", 89), ("2002r", 86), ("1906", 82),
+        ("574", 60), ("gel-1130", 78), ("gel kayano", 74), ("xt-6", 77),
+        ("speedcross", 64), ("palermo", 73), ("suede classic", 62),
+        ("chuck 70", 71), ("all star", 58),
+    )
+    brands = (
+        ("nike", 40), ("adidas", 39), ("new balance", 38), ("jordan", 37),
+        ("asics", 30), ("salomon", 29), ("converse", 28), ("puma", 27),
+    )
+    score = 1
+    for name, pts in models:
+        if name in blob:
+            score = max(score, pts * 10)
+    for name, pts in brands:
+        if name in blob:
+            score += pts
+    return score
+
+
 def main():
     fx = rates()
     print("fx", fx)
@@ -527,9 +554,9 @@ def main():
     else:
         print("missing jd")
     products = list(cards.values())
-    products.sort(key=lambda p: (p["brand"], p["name"], p["id"]))
-    for i, p in enumerate(products):
-        p["pop"] = max(1, len(p["offers"]) * 10 + min(len(p["sizes"]), 12))
+    for p in products:
+        p["pop"] = popularity(p)
+    products.sort(key=lambda p: (-p["pop"], p["brand"], p["name"], p["id"]))
     os.makedirs(os.path.join(OUT, "catalog"), exist_ok=True)
     item_dir = os.path.join(OUT, "catalog", "items")
     os.makedirs(item_dir, exist_ok=True)

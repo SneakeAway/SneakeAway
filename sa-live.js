@@ -86,7 +86,7 @@ window.HOME_DOC_TITLE = document.title || 'Sneake® Away — compare sneaker pri
     eta: { en: 'est. {a}–{b}', bg: 'ок. {a}–{b}', fr: 'env. {a}–{b}', de: 'ca. {a}–{b}', es: 'est. {a}–{b}', it: 'circa {a}–{b}' },
     days: { en: '{a}–{b} days', bg: '{a}–{b} дни', fr: '{a}–{b} jours', de: '{a}–{b} Tage', es: '{a}–{b} días', it: '{a}–{b} giorni' },
     has_size: { en: 'Has {s}', bg: 'Има {s}', fr: 'Pointure {s}', de: 'Größe {s} da', es: 'Talla {s}', it: 'Taglia {s}' },
-    no_size: { en: 'No {s}', bg: 'Няма {s}', fr: 'Pas de {s}', de: 'Keine {s}', es: 'Sin {s}', it: 'Niente {s}' },
+    no_size: { en: '№ {s}', bg: '№ {s}', fr: '№ {s}', de: '№ {s}', es: '№ {s}', it: '№ {s}' },
     offers: { en: 'Offers', bg: 'Оферти', fr: 'Offres', de: 'Angebote', es: 'Ofertas', it: 'Offerte' },
     same_eu: { en: 'Usually the same size as {r}.', bg: 'Обикновено същият номер като {r}.', fr: 'Souvent la même pointure que {r}.', de: 'Meist dieselbe Größe wie {r}.', es: 'Suele ser la misma talla que {r}.', it: 'Di solito stessa taglia di {r}.' },
     half_up: { en: 'Often +½ size versus {r}.', bg: 'Често +½ номер спрямо {r}.', fr: 'Souvent +½ par rapport à {r}.', de: 'Oft +½ gegenüber {r}.', es: 'A menudo +½ frente a {r}.', it: 'Spesso +½ rispetto a {r}.' },

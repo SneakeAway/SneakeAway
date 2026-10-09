@@ -772,17 +772,24 @@ function euSizeList(sizes) {
     const out = [];
     (sizes || []).forEach(s => {
         const n = Number(s);
-        if (isNaN(n)) return;
-        let row = map.find(r => Number(r.eu) === n);
-        if (!row && n < 16) row = map.find(r => Number(r.uk) === n || Number(r.us) === n);
-        if (!row && n >= 20 && n <= 34) row = map.find(r => Number(r.cm) === n);
+        if (isNaN(n) || n < 34 || n > 50) return;
+        const row = map.find(r => Number(r.eu) === n);
         if (!row) return;
-        const eu = row.eu;
-        if (seen.has(eu)) return;
-        seen.add(eu);
-        out.push(eu);
+        if (seen.has(row.eu)) return;
+        seen.add(row.eu);
+        out.push(row.eu);
     });
     return out.sort((a, b) => a - b);
+}
+function isJunkProduct(p) {
+    const blob = ((p && p.name) || '') + ' ' + ((p && p.brand) || '');
+    return /sock|kojin|slipper|slide|sandal|claquettes|flip-flop|джапан/i.test(blob);
+}
+function cleanLoaded(list) {
+    return (list || []).filter(p => !isJunkProduct(p)).map(p => {
+        p.sizes = euSizeList(p.sizes || []);
+        return p;
+    });
 }
 function labelSize(eu) {
     const sys = (typeof sizeChipSystem !== 'undefined' && sizeChipSystem) ? sizeChipSystem : 'eu';
@@ -1162,13 +1169,16 @@ function openWishlistSelector(id, e) {
 
     const dict = langs[currentLang] || langs.en;
 
-    const colorList = (p.colors && p.colors.length) ? p.colors : [];
-    const sizeList = (p.sizes && p.sizes.length) ? p.sizes : [];
+    const colorList = uniqueVariants(p);
+    const sizeList = euSizeList(p.sizes || []);
+    selectedWishId = p.id;
     if (!colorList.length) selectedWishColor = 'Default';
-    const colorsHTML = colorList.map(c => {
-        const safe = String(c).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-        return `<button class="wish-color-btn" onclick="selectWishColor(this, '${safe}')"
-                 style="padding:8px 14px; margin:4px; border:2px solid var(--border); background:var(--bg); color:var(--text); border-radius:8px; cursor:pointer; font-size:0.85rem;">${c}</button>`;
+    const colorsHTML = colorList.map(v => {
+        const safe = String(v.label || v.color || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        const vid = v.id != null ? String(v.id).replace(/"/g, '') : String(p.id);
+        const img = v.image || p.image || '';
+        return `<button class="wish-color-btn" data-id="${vid}" onclick="selectWishColor(this, '${safe}')"
+                 style="display:flex; align-items:center; gap:8px; padding:4px 10px 4px 4px; margin:4px; border:2px solid var(--border); background:var(--bg); color:var(--text); border-radius:8px; cursor:pointer; font-size:0.85rem;"><span style="width:36px;height:36px;background:#fff;border-radius:6px;display:flex;align-items:center;justify-content:center;"><img src="${img}" alt="" style="max-width:32px;max-height:32px;object-fit:contain;"></span>${safe}</button>`;
     }).join('');
     const sizesHTML = sizeList.map(s => {
         const safe = String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
@@ -1178,7 +1188,7 @@ function openWishlistSelector(id, e) {
 
     const modalHTML = `
         <div id="wishlist-selector-modal" data-pid="${p.id}" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.88); display:flex; align-items:center; justify-content:center; z-index:4200; padding:20px;">
-            <div style="background:var(--card); max-width:480px; width:100%; border-radius:18px; padding:28px; position:relative;">
+            <div style="background:var(--card); max-width:480px; width:100%; max-height:calc(100vh - 40px); overflow-y:auto; border-radius:18px; padding:28px; position:relative;">
                 
                 <button onclick="closeWishlistSelector()" style="position:absolute; top:14px; right:16px; font-size:1.8rem; background:none; border:none; color:var(--text); cursor:pointer;">×</button>
                 
@@ -1200,7 +1210,7 @@ function openWishlistSelector(id, e) {
                 </div>
 
                 <button id="confirm-wishlist-btn" onclick="confirmWishlistAdd(${jsId(p.id)})" 
-                        style="width:100%; padding:14px; background:#E63946; color:white; border:none; border-radius:10px; font-weight:700; font-size:1rem; cursor:pointer; opacity:0.5;" disabled>
+                        style="width:100%; padding:14px; background:#C9A84C; color:#1a1a1a; border:none; border-radius:10px; font-weight:700; font-size:1rem; cursor:pointer; opacity:0.5;" disabled>
                     ${dict.add_to_wishlist}
                 </button>
             </div>
@@ -1222,21 +1232,21 @@ function openWishlistSelector(id, e) {
 
 let selectedWishColor = null;
 let selectedWishSize = null;
+let selectedWishId = null;
 
 function selectWishColor(btn, color) {
     document.querySelectorAll('.wish-color-btn').forEach(b => {
         b.style.borderColor = 'var(--border)';
         b.style.background = 'var(--bg)';
     });
-    btn.style.borderColor = '#E63946';
-    btn.style.background = 'rgba(230, 57, 70, 0.15)';
+    btn.style.borderColor = '#C9A84C';
+    btn.style.background = 'rgba(201, 168, 76, 0.18)';
     selectedWishColor = color;
+    if (btn.getAttribute('data-id')) selectedWishId = btn.getAttribute('data-id');
     const modal = document.getElementById('wishlist-selector-modal');
     const img = modal && modal.querySelector('img');
-    if (img && modal) {
-        const p = productsData.find(item => String(item.id) === String(modal.getAttribute('data-pid')));
-        if (p) img.src = imageForColor(p, color);
-    }
+    const thumb = btn.querySelector('img');
+    if (img && thumb && thumb.src) img.src = thumb.src;
     checkWishlistReady();
 }
 
@@ -1245,8 +1255,8 @@ function selectWishSize(btn, size) {
         b.style.borderColor = 'var(--border)';
         b.style.background = 'var(--bg)';
     });
-    btn.style.borderColor = '#E63946';
-    btn.style.background = 'rgba(230, 57, 70, 0.15)';
+    btn.style.borderColor = '#C9A84C';
+    btn.style.background = 'rgba(201, 168, 76, 0.18)';
     selectedWishSize = size;
     checkWishlistReady();
 }
@@ -1290,7 +1300,7 @@ function confirmWishlistAdd(id) {
     if (!exists) {
         const restockEl = document.getElementById('restock-flag');
         wishlist.push({
-            id: id,
+            id: selectedWishId || id,
             color: selectedWishColor,
             size: selectedWishSize,
             restock: !!(restockEl && restockEl.checked)
@@ -1581,7 +1591,9 @@ function offerBoardHTML(p, offers, rate, symbol, dict, opts) {
         const ship = dest ? offerShippingCost(o, dest) : (Number(o.shipping) || 0);
         const est = dest ? dutyEstimate(o, dest) : null;
         const toYou = shopP + (Number(ship) || 0) + (calc && est ? est.amount : 0);
-        return { o, shopP, ship, est, toYou };
+        const shopPrices = (typeof offersForSameColor === 'function' ? offersForSameColor(p) : (p.offers || []))
+            .filter(x => x.shop === o.shop).map(x => Number(x.price)).filter(n => n > 0);
+        return { o, shopP, ship, est, toYou, shopPrices };
     });
     if (calc) rows.sort((a, b) => a.toYou - b.toYou);
     else rows.sort((a, b) => a.shopP - b.shopP);
@@ -1622,13 +1634,26 @@ function offerBoardHTML(p, offers, rate, symbol, dict, opts) {
             ${icon || '<span class="ship-ico-spacer"></span>'}
             <div class="offer-stack-main">
                 <a href="${url}" class="offer-shop-link" target="_blank" rel="noopener sponsored noreferrer">${r.o.shop}</a>
-                <a href="${url}" class="offer-price-link offer-shop-price" target="_blank" rel="noopener sponsored noreferrer">${formatMoney(r.shopP, rate, symbol)}</a>
+                <a href="${url}" class="offer-price-link offer-shop-price" target="_blank" rel="noopener sponsored noreferrer">${(typeof shopPriceLabel==='function') ? shopPriceLabel(r, rate, symbol) : formatMoney(r.shopP, rate, symbol)}</a>
                 ${shipLine}${taxLine}${dutyLine}
             </div>
             ${toYouLine}
         </div>`;
     }).join('');
 }
+
+function shopPriceLabel(row, rate, symbol) {
+    const dest = (shipMode === 'tome' && currentCountry) ? currentCountry : '';
+    const sized = (selectedSizes && selectedSizes.length) || selectedProductSize;
+    if (dest && sized) return formatMoney(row.shopP, rate, symbol);
+    const prices = (row.shopPrices && row.shopPrices.length) ? row.shopPrices : [row.shopP];
+    const nums = prices.map(Number).filter(n => n > 0);
+    if (nums.length < 2) return formatMoney(row.shopP, rate, symbol);
+    const lo = Math.min(...nums), hi = Math.max(...nums);
+    if (lo === hi) return formatMoney(lo, rate, symbol);
+    return formatMoney(lo, rate, symbol) + '–' + formatMoney(hi, rate, symbol);
+}
+
 function calcBtnHTML(dict) {
     const dest = (shipMode === 'tome' && currentCountry) ? currentCountry : '';
     const on = landedCalcOn();
@@ -1730,10 +1755,40 @@ function getBestPriceEUR(p) {
 
 function isSoleishUrl(u) {
     const s = String(u || '').toLowerCase();
-    if (/outsole|sole[-_]?view|underside|bottom[-_]?view|podoshv|podmet/.test(s)) return true;
+    if (/outsole|sole[-_]?view|underside|bottom[-_]?view|podoshv|podmet|soleview|bottomview/.test(s)) return true;
     const z = s.match(/_z_(\d+)\.(jpg|jpeg|webp|png)/);
-    if (z && Number(z[1]) >= 8) return true;
+    if (z && Number(z[1]) >= 5) return true;
     return false;
+}
+function shopKey(u) {
+    const s = String(u || '').toLowerCase();
+    if (s.includes('sizeer') || /_z_\d+\./.test(s)) return 'sizeer';
+    if (s.includes('qns.digital')) return 'queens';
+    if (s.includes('ftshp.digital')) return 'footshop';
+    return 'other';
+}
+function dropSoles(urls) {
+    const groups = {};
+    urls.forEach(u => {
+        const k = shopKey(u);
+        (groups[k] = groups[k] || []).push(u);
+    });
+    const keep = new Set();
+    Object.keys(groups).forEach(k => {
+        const list = groups[k];
+        list.forEach((u, i) => {
+            if (k === 'sizeer') {
+                const m = String(u).toLowerCase().match(/_z_(\d+)\./);
+                if (m && [6, 7, 8].includes(Number(m[1]))) return;
+            } else if ((k === 'queens' || k === 'footshop') && i === 1) return;
+            else if (k === 'other' && list.length > 6 && i >= 5 && i <= 7) return;
+            keep.add(u);
+        });
+    });
+    return urls.filter(u => keep.has(u) && !isSoleishUrl(u));
+}
+function lookGallery(p) {
+    return dropSoles(productGallery(p));
 }
 function productGallery(p) {
     const list = [p && p.image, ...((p && p.images) || [])].filter(Boolean);
@@ -1764,11 +1819,13 @@ function listCardName(p) {
     return model + ' · ' + color;
 }
 function pickLookImage(p, slot) {
-    const gallery = productGallery(p).filter(u => !isSoleishUrl(u));
-    const all = gallery.length ? gallery : productGallery(p);
+    const gallery = lookGallery(p);
+    const all = gallery.length ? gallery : productGallery(p).filter(u => !isSoleishUrl(u));
     if (!all.length) return (p && p.image) || '';
-    const i = Math.abs(Number(slot) || 0) % all.length;
-    return all[i];
+    const use = all.length > 1 ? all.slice(1) : all;
+    const n = use.length;
+    const s = Math.abs(Number(slot) || 0);
+    return use[(s * 2 + 1) % n];
 }
 
 function escapeHtml(s) {
@@ -2818,7 +2875,7 @@ async function initProductPage() {
     }
     if (!p) {
         try {
-            const res = await fetch('products.json', { cache: 'force-cache' });
+            const res = await saCatalogFetch('products.json', { cache: 'default' });
             if (res.ok) {
                 const all = await res.json();
                 if (Array.isArray(all)) {
@@ -4347,7 +4404,7 @@ async function loadNextCatalogPage() {
         const more = await res.json();
         if (!Array.isArray(more) || !more.length) { saCatalogPages = saCatalogPage; return; }
         const have = new Set((productsData || []).map(p => String(p.id)));
-        const add = more.filter(p => !have.has(String(p.id)));
+        const add = cleanLoaded(more).filter(p => !have.has(String(p.id)));
         if (add.length) productsData = (productsData || []).concat(add);
         saCatalogPage = next;
         _filtCacheKey = '';
@@ -4360,12 +4417,12 @@ async function loadNextCatalogPage() {
 async function loadProductsLiteRest() {
     if (window.__saRestLoaded) return;
     try {
-        const res = await fetch('products-lite.json', { cache: 'force-cache' });
+        const res = await saCatalogFetch('products-lite.json', { cache: 'default' });
         if (!res.ok) return;
         const more = await res.json();
         if (!Array.isArray(more) || !more.length) return;
         const have = new Set((productsData || []).map(p => String(p.id)));
-        const add = more.filter(p => !have.has(String(p.id)));
+        const add = cleanLoaded(more).filter(p => !have.has(String(p.id)));
         if (add.length) productsData = (productsData || []).concat(add);
         _filtCacheKey = '';
         _filtCacheList = null;
@@ -4393,7 +4450,7 @@ async function loadProductsFull(id) {
     if (cur && cur._detail) return cur;
     if (pid) {
         try {
-            const res = await fetch('catalog/items/' + encodeURIComponent(pid) + '.json', { cache: 'force-cache' });
+            const res = await saCatalogFetch('catalog/items/' + encodeURIComponent(pid) + '.json', { cache: 'default' });
             if (res.ok) {
                 const f = await res.json();
                 const merged = Object.assign({}, cur || {}, f, { _detail: true });
@@ -4405,7 +4462,7 @@ async function loadProductsFull(id) {
     }
     if (productsFull) return cur || productsFull;
     try {
-        const res = await fetch('products.json', { cache: 'force-cache' });
+        const res = await saCatalogFetch('products.json', { cache: 'default' });
         if (res.ok) {
             const data = await res.json();
             if (Array.isArray(data) && data.length) {
@@ -4509,7 +4566,7 @@ function unionFromIndex(map, keys) {
 async function loadProducts() {
     let data = null;
     try {
-        const res = await fetch('catalog/first.json', { cache: 'force-cache' });
+        const res = await saCatalogFetch('catalog/first.json', { cache: 'default' });
         if (res.ok) {
             const parsed = await res.json();
             if (Array.isArray(parsed) && parsed.length) data = parsed;
@@ -4517,20 +4574,20 @@ async function loadProducts() {
     } catch (e) {}
     if (!data) {
         try {
-            const res = await fetch('products-lite.json', { cache: 'force-cache' });
+            const res = await saCatalogFetch('products-lite.json', { cache: 'default' });
             if (res.ok) {
                 const parsed = await res.json();
                 if (Array.isArray(parsed) && parsed.length) data = parsed;
             }
         } catch (e) {}
     }
-    productsData = data && data.length ? data : interleaveByShop(FALLBACK_PRODUCTS || []);
+    productsData = cleanLoaded(data && data.length ? data : interleaveByShop(FALLBACK_PRODUCTS || []));
     try { buildCatalogIndex(); } catch (e) {}
     try { fillExtraFilters(); fillColorFilters(); fillStyleFilters(); } catch (e) {}
     window.__saProductsReady = true;
     window.__saRestLoaded = false;
     bindCatalogScroll();
-    setTimeout(function () { loadProductsLiteRest(); }, 400);
+    setTimeout(function () { loadNextCatalogPage(); }, 400);
     window.__saKickFullGallery = function () {
         if (window.__saFullKick) return;
         window.__saFullKick = true;
@@ -4566,7 +4623,7 @@ async function loadProductsRest() {
         const more = await res.json();
         if (!Array.isArray(more) || !more.length) return;
         const have = new Set((productsData || []).map(p => String(p.id)));
-        const add = more.filter(p => !have.has(String(p.id)));
+        const add = cleanLoaded(more).filter(p => !have.has(String(p.id)));
         if (!add.length) return;
         productsData = (productsData || []).concat(add);
         window.__saRestLoaded = true;
@@ -4762,7 +4819,7 @@ window.addEventListener('popstate', () => {
     } catch (e) {}
 });
 window.onload = async () => {
-    console.log("✅ Страницата се зареди");
+    console.log("✅ Страницата се зареди 325ca");
     try { sizeChipSystem = localStorage.getItem('sa_size_sys') || sizeChipSystem || 'eu'; } catch (e) {}
     try {
         const savedSz = JSON.parse(localStorage.getItem('sa_fit_eus') || '[]');
