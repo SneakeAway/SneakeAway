@@ -1,0 +1,84 @@
+name: Restore catalog
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: feeds
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Split the last good catalog into pages
+        run: |
+          set -euo pipefail
+          python3 - << 'PY'
+          import json, urllib.request
+          from pathlib import Path
+          url = "https://pub-e3aa92af71b44f72a7b16c1f4c69783a.r2.dev/products.json"
+          req = urllib.request.Request(url, headers={"User-Agent": "sneakeaway-restore"})
+          with urllib.request.urlopen(req, timeout=180) as r:
+              data = json.loads(r.read().decode())
+          if not isinstance(data, list) or len(data) < 1000:
+              raise SystemExit("products.json is not the full catalog")
+          if data[0].get("name") != "9060":
+              raise SystemExit("refusing to publish a catalog that does not start with 9060")
+          page_size = 96
+          root = Path("catalog")
+          pages = root / "pages"
+          pages.mkdir(parents=True, exist_ok=True)
+          (root / "first.json").write_text(json.dumps(data[:page_size], ensure_ascii=False, separators=(",", ":")))
+          n = 0
+          for i in range(page_size, len(data), page_size):
+              n += 1
+              (pages / f"page-{n+1}.json").write_text(json.dumps(data[i:i+page_size], ensure_ascii=False, separators=(",", ":")))
+          meta = {
+              "count": len(data),
+              "pages": n + 1,
+              "pageSize": page_size,
+              "source": "products.json restore"
+          }
+          (root / "meta.json").write_text(json.dumps(meta))
+          print("restored", len(data), "pages", n + 1, "first", data[0].get("brand"), data[0].get("name"))
+          PY
+
+      - name: Upload restored pages to R2
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          python3 -m pip install --user awscli
+          export PATH="$HOME/.local/bin:$PATH"
+          python3 - << 'PY'
+          from pathlib import Path
+          p = Path.home() / ".aws"
+          p.mkdir(exist_ok=True)
+          (p / "config").write_text("[default]\ns3 =\n  max_concurrent_requests = 20\n  max_queue_size = 1000\n")
+          PY
+          EP="https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
+          BUCKET="sneakeaway-catalog"
+          put() {
+            aws s3 cp "$1" "s3://${BUCKET}/$2" \
+              --endpoint-url "$EP" \
+              --content-type "application/json; charset=utf-8" \
+              --cache-control "public, max-age=60" \
+              --only-show-errors
+          }
+          put catalog/first.json first.json
+          put catalog/meta.json meta.json
+          aws s3 sync catalog/pages "s3://${BUCKET}/pages" \
+            --endpoint-url "$EP" \
+            --content-type "application/json; charset=utf-8" \
+            --cache-control "public, max-age=60" \
+            --delete \
+            --only-show-errors
+          echo "restored pages uploaded"
